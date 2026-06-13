@@ -81,7 +81,7 @@ export default function Landing() {
                 variants={fadeUp}
                 className="text-5xl md:text-6xl font-black leading-tight mb-6"
               >
-                Any Insurance.
+                PAYG
                 <br />
                 <span className="text-blue-600">Paid with Airtime.</span>
               </motion.h1>
