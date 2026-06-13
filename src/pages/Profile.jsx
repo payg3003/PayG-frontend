@@ -13,14 +13,14 @@ function BottomSheet({ open, onClose, title, children }) {
       onClick={onClose}
     >
       <div
-        className="bg-white w-full lg:max-w-lg rounded-t-4xl lg:rounded-3xl p-6 scale-in max-h-[90vh] overflow-y-auto"
+        className="bg-[var(--bg-surface)] w-full lg:max-w-lg rounded-t-4xl lg:rounded-3xl p-6 scale-in max-h-[90vh] overflow-y-auto"
         onClick={e => e.stopPropagation()}
       >
         <div className="w-10 h-1 bg-ink-border rounded-full mx-auto mb-5 lg:hidden" />
         <div className="flex items-center justify-between mb-5">
-          <h3 className="font-display font-extrabold text-xl text-ink">{title}</h3>
-          <button onClick={onClose} className="w-8 h-8 bg-ink-faint rounded-full flex items-center justify-center">
-            <span className="icon-o text-ink-muted text-xl">close</span>
+          <h3 className="font-display font-extrabold text-xl text-[var(--text-primary)]">{title}</h3>
+          <button onClick={onClose} className="w-8 h-8 bg-[var(--bg-elevated)] rounded-full flex items-center justify-center">
+            <span className="icon-o text-[var(--text-secondary)] text-xl">close</span>
           </button>
         </div>
         {children}
@@ -33,12 +33,12 @@ function Field({ label, value, editing, name, type = 'text', options, onChange }
   if (editing && options) {
     return (
       <div className="mb-4">
-        <label className="block text-xs font-display font-semibold text-ink-muted mb-1.5">{label}</label>
+        <label className="block text-xs font-display font-semibold text-[var(--text-secondary)] mb-1.5">{label}</label>
         <select
           name={name}
           value={value}
           onChange={onChange}
-          className="w-full bg-ink-faint border border-ink-border rounded-2xl px-4 py-3 text-sm font-display text-ink focus:outline-none focus:border-blue-brand"
+          className="w-full bg-[var(--bg-elevated)] border border-[var(--border)] rounded-2xl px-4 py-3 text-sm font-display text-[var(--text-primary)] focus:outline-none focus:border-blue-brand"
         >
           {options.map(o => <option key={o} value={o}>{o}</option>)}
         </select>
@@ -48,21 +48,21 @@ function Field({ label, value, editing, name, type = 'text', options, onChange }
   if (editing) {
     return (
       <div className="mb-4">
-        <label className="block text-xs font-display font-semibold text-ink-muted mb-1.5">{label}</label>
+        <label className="block text-xs font-display font-semibold text-[var(--text-secondary)] mb-1.5">{label}</label>
         <input
           name={name}
           type={type}
           value={value}
           onChange={onChange}
-          className="w-full bg-ink-faint border border-ink-border rounded-2xl px-4 py-3 text-sm font-display text-ink focus:outline-none focus:border-blue-brand"
+          className="w-full bg-[var(--bg-elevated)] border border-[var(--border)] rounded-2xl px-4 py-3 text-sm font-display text-[var(--text-primary)] focus:outline-none focus:border-blue-brand"
         />
       </div>
     )
   }
   return (
-    <div className="flex items-center justify-between py-3 border-b border-ink-border last:border-0">
-      <p className="text-xs font-display font-semibold text-ink-muted">{label}</p>
-      <p className="text-sm font-display font-semibold text-ink">{value || '—'}</p>
+    <div className="flex items-center justify-between py-3 border-b border-[var(--border)] last:border-0">
+      <p className="text-xs font-display font-semibold text-[var(--text-secondary)]">{label}</p>
+      <p className="text-sm font-display font-semibold text-[var(--text-primary)]">{value || '—'}</p>
     </div>
   )
 }
@@ -98,13 +98,13 @@ function PersonalDetailsModal({ open, onClose, user, onSave }) {
         <div className="flex gap-3 mt-6">
           <button
             onClick={() => setEditing(false)}
-            className="flex-1 bg-ink-faint text-ink font-display font-bold py-4 rounded-3xl hover:bg-ink-border active:scale-95 transition-all"
+            className="flex-1 bg-[var(--bg-elevated)] text-[var(--text-primary)] font-display font-bold py-4 rounded-3xl hover:bg-ink-border active:scale-95 transition-all"
           >
             Cancel
           </button>
           <button
             onClick={handleSave}
-            className="flex-1 bg-blue-brand text-white font-display font-bold py-4 rounded-3xl hover:bg-blue-dark active:scale-95 transition-all"
+            className="flex-1 bg-[var(--primary)] text-white font-display font-bold py-4 rounded-3xl hover:bg-blue-dark active:scale-95 transition-all"
           >
             Save Changes
           </button>
@@ -112,7 +112,7 @@ function PersonalDetailsModal({ open, onClose, user, onSave }) {
       ) : (
         <button
           onClick={() => setEditing(true)}
-          className="w-full mt-6 bg-blue-brand text-white font-display font-bold py-4 rounded-3xl hover:bg-blue-dark active:scale-95 transition-all flex items-center justify-center gap-2"
+          className="w-full mt-6 bg-[var(--primary)] text-white font-display font-bold py-4 rounded-3xl hover:bg-blue-dark active:scale-95 transition-all flex items-center justify-center gap-2"
         >
           <span className="icon-o text-xl">edit</span>
           Edit Details
@@ -139,8 +139,8 @@ function NextOfKinModal({ open, onClose, user, onSave }) {
   return (
     <BottomSheet open={open} onClose={handleClose} title="Next of Kin">
       <div className="bg-blue-light rounded-2xl px-4 py-3 flex gap-3 mb-5">
-        <span className="icon text-blue-brand text-xl flex-shrink-0">info</span>
-        <p className="text-xs text-blue-brand font-display">
+        <span className="icon text-[var(--primary)] text-xl flex-shrink-0">info</span>
+        <p className="text-xs text-[var(--primary)] font-display">
           Required by Nigerian insurance regulations. This person will be contacted in case of an emergency.
         </p>
       </div>
@@ -154,13 +154,13 @@ function NextOfKinModal({ open, onClose, user, onSave }) {
         <div className="flex gap-3 mt-6">
           <button
             onClick={() => setEditing(false)}
-            className="flex-1 bg-ink-faint text-ink font-display font-bold py-4 rounded-3xl hover:bg-ink-border active:scale-95 transition-all"
+            className="flex-1 bg-[var(--bg-elevated)] text-[var(--text-primary)] font-display font-bold py-4 rounded-3xl hover:bg-ink-border active:scale-95 transition-all"
           >
             Cancel
           </button>
           <button
             onClick={handleSave}
-            className="flex-1 bg-blue-brand text-white font-display font-bold py-4 rounded-3xl hover:bg-blue-dark active:scale-95 transition-all"
+            className="flex-1 bg-[var(--primary)] text-white font-display font-bold py-4 rounded-3xl hover:bg-blue-dark active:scale-95 transition-all"
           >
             Save Changes
           </button>
@@ -168,7 +168,7 @@ function NextOfKinModal({ open, onClose, user, onSave }) {
       ) : (
         <button
           onClick={() => setEditing(true)}
-          className="w-full mt-6 bg-blue-brand text-white font-display font-bold py-4 rounded-3xl hover:bg-blue-dark active:scale-95 transition-all flex items-center justify-center gap-2"
+          className="w-full mt-6 bg-[var(--primary)] text-white font-display font-bold py-4 rounded-3xl hover:bg-blue-dark active:scale-95 transition-all flex items-center justify-center gap-2"
         >
           <span className="icon-o text-xl">edit</span>
           Edit Next of Kin
@@ -190,32 +190,32 @@ function TransactionHistoryModal({ open, onClose, transactions }) {
     <BottomSheet open={open} onClose={onClose} title="Transaction History">
       {transactions.length === 0 ? (
         <div className="text-center py-10">
-          <span className="icon-o text-ink-muted text-5xl">receipt_long</span>
-          <p className="font-display font-semibold text-ink mt-3">No transactions yet</p>
-          <p className="text-sm text-ink-muted mt-1">Your payment history will appear here.</p>
+          <span className="icon-o text-[var(--text-secondary)] text-5xl">receipt_long</span>
+          <p className="font-display font-semibold text-[var(--text-primary)] mt-3">No transactions yet</p>
+          <p className="text-sm text-[var(--text-secondary)] mt-1">Your payment history will appear here.</p>
         </div>
       ) : (
         <div className="flex flex-col gap-0">
           {transactions.map((tx, i) => (
             <div
               key={tx.id || i}
-              className="flex items-center justify-between py-4 border-b border-ink-border last:border-0"
+              className="flex items-center justify-between py-4 border-b border-[var(--border)] last:border-0"
             >
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 bg-green-light rounded-xl flex items-center justify-center flex-shrink-0">
                   <span className="icon text-green-brand text-xl">payments</span>
                 </div>
                 <div>
-                  <p className="font-display font-semibold text-ink text-sm">
+                  <p className="font-display font-semibold text-[var(--text-primary)] text-sm">
                     {tx.description || 'Wallet Top-up'}
                   </p>
-                  <p className="text-xs text-ink-muted">
+                  <p className="text-xs text-[var(--text-secondary)]">
                     {tx.date ? new Date(tx.date).toLocaleDateString('en-NG', { day: 'numeric', month: 'short', year: 'numeric' }) : '—'}
                   </p>
                 </div>
               </div>
               <div className="text-right">
-                <p className="font-display font-bold text-ink text-sm">
+                <p className="font-display font-bold text-[var(--text-primary)] text-sm">
                   +₦{Number(tx.amount).toLocaleString()}
                 </p>
                 <span className={`text-[10px] font-display font-bold px-2 py-0.5 rounded-full ${STATUS_STYLE[tx.status] || STATUS_STYLE.success}`}>
@@ -273,39 +273,39 @@ function HelpModal({ open, onClose }) {
           href="tel:+2348001234567"
           className="bg-blue-light rounded-2xl p-4 flex flex-col items-center gap-2 hover:bg-blue-muted transition-colors"
         >
-          <span className="icon text-blue-brand text-2xl">call</span>
-          <p className="font-display font-bold text-blue-brand text-xs text-center">Call Us</p>
-          <p className="font-display text-blue-brand text-[10px] text-center">0800 123 4567</p>
+          <span className="icon text-[var(--primary)] text-2xl">call</span>
+          <p className="font-display font-bold text-[var(--primary)] text-xs text-center">Call Us</p>
+          <p className="font-display text-[var(--primary)] text-[10px] text-center">0800 123 4567</p>
         </a>
         <button
           onClick={copyEmail}
-          className="bg-ink-faint rounded-2xl p-4 flex flex-col items-center gap-2 hover:bg-ink-border transition-colors"
+          className="bg-[var(--bg-elevated)] rounded-2xl p-4 flex flex-col items-center gap-2 hover:bg-ink-border transition-colors"
         >
-          <span className="icon-o text-ink text-2xl">mail</span>
-          <p className="font-display font-bold text-ink text-xs text-center">
+          <span className="icon-o text-[var(--text-primary)] text-2xl">mail</span>
+          <p className="font-display font-bold text-[var(--text-primary)] text-xs text-center">
             {copied ? 'Copied!' : 'Email Us'}
           </p>
-          <p className="font-display text-ink-muted text-[10px] text-center">support@payg.ng</p>
+          <p className="font-display text-[var(--text-secondary)] text-[10px] text-center">support@payg.ng</p>
         </button>
       </div>
 
       {/* FAQs */}
-      <p className="font-display font-bold text-ink text-sm mb-3">Frequently Asked Questions</p>
-      <div className="rounded-2xl border border-ink-border overflow-hidden">
+      <p className="font-display font-bold text-[var(--text-primary)] text-sm mb-3">Frequently Asked Questions</p>
+      <div className="rounded-2xl border border-[var(--border)] overflow-hidden">
         {FAQS.map((faq, i) => (
-          <div key={i} className="border-b border-ink-border last:border-0">
+          <div key={i} className="border-b border-[var(--border)] last:border-0">
             <button
               onClick={() => setOpenFaq(openFaq === i ? null : i)}
-              className="w-full flex items-center justify-between px-4 py-4 text-left hover:bg-ink-faint transition-colors"
+              className="w-full flex items-center justify-between px-4 py-4 text-left hover:bg-[var(--bg-elevated)] transition-colors"
             >
-              <p className="font-display font-semibold text-ink text-sm pr-4">{faq.q}</p>
-              <span className={`icon-o text-ink-muted text-xl flex-shrink-0 transition-transform ${openFaq === i ? 'rotate-180' : ''}`}>
+              <p className="font-display font-semibold text-[var(--text-primary)] text-sm pr-4">{faq.q}</p>
+              <span className={`icon-o text-[var(--text-secondary)] text-xl flex-shrink-0 transition-transform ${openFaq === i ? 'rotate-180' : ''}`}>
                 expand_more
               </span>
             </button>
             {openFaq === i && (
               <div className="px-4 pb-4">
-                <p className="text-sm text-ink-muted leading-relaxed">{faq.a}</p>
+                <p className="text-sm text-[var(--text-secondary)] leading-relaxed">{faq.a}</p>
               </div>
             )}
           </div>
@@ -421,10 +421,10 @@ export default function Profile() {
           <div className="flex flex-col gap-4">
 
             {/* Profile hero card */}
-            <div className="bg-blue-brand rounded-3xl p-6 relative overflow-hidden fu">
-              <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full -translate-y-1/2 translate-x-1/2 pointer-events-none" />
+            <div className="rounded-3xl p-6 relative overflow-hidden fu" style={{background:"var(--gradient-primary)"}}>
+              <div className="absolute top-0 right-0 w-32 h-32 bg-[var(--bg-surface)]/5 rounded-full -translate-y-1/2 translate-x-1/2 pointer-events-none" />
               <div className="flex items-center gap-4">
-                <div className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center flex-shrink-0">
+                <div className="w-16 h-16 bg-[var(--bg-surface)]/20 rounded-2xl flex items-center justify-center flex-shrink-0">
                   <span className="icon text-white text-3xl">person</span>
                 </div>
                 <div>
@@ -440,7 +440,7 @@ export default function Profile() {
                   </div>
                 </div>
               </div>
-              <div className="mt-4 bg-white/10 rounded-2xl px-4 py-3 flex items-center justify-between">
+              <div className="mt-4 bg-[var(--bg-surface)]/10 rounded-2xl px-4 py-3 flex items-center justify-between">
                 <div>
                   <p className="text-blue-muted text-[10px] font-display font-semibold">Policy Number</p>
                   <p className="text-white font-display font-bold text-sm tracking-wide">{subscription.policyNumber}</p>
@@ -452,19 +452,19 @@ export default function Profile() {
             </div>
 
             {/* Plan card */}
-            <div className="bg-white rounded-3xl shadow-card p-5 fu fu1">
+            <div className="bg-[var(--bg-surface)] rounded-3xl shadow-card p-5 fu fu1">
               <div className="flex items-center justify-between mb-3">
-                <p className="text-[10px] font-display font-bold text-ink-muted uppercase tracking-wider">Current Plan</p>
-                <button onClick={() => navigate('/plans')} className="text-xs text-blue-brand font-display font-bold hover:underline">Change</button>
+                <p className="text-[10px] font-display font-bold text-[var(--text-secondary)] uppercase tracking-wider">Current Plan</p>
+                <button onClick={() => navigate('/plans')} className="text-xs text-[var(--primary)] font-display font-bold hover:underline">Change</button>
               </div>
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 bg-blue-light rounded-xl flex items-center justify-center">
-                    <span className="icon text-blue-brand text-xl">health_and_safety</span>
+                    <span className="icon text-[var(--primary)] text-xl">health_and_safety</span>
                   </div>
                   <div>
-                    <p className="font-display font-bold text-ink">{subscription.plan}</p>
-                    <p className="text-xs text-ink-muted">₦{subscription.planPrice.toLocaleString()}/month</p>
+                    <p className="font-display font-bold text-[var(--text-primary)]">{subscription.plan}</p>
+                    <p className="text-xs text-[var(--text-secondary)]">₦{subscription.planPrice.toLocaleString()}/month</p>
                   </div>
                 </div>
                 <div className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-display font-bold ${
@@ -478,36 +478,36 @@ export default function Profile() {
 
            
 
-            <p className="text-center text-xs text-ink-muted font-display">PAYG v2.0.0 · © 2026 PayGo Technologies Ltd.</p>
+            <p className="text-center text-xs text-[var(--text-secondary)] font-display">PAYG v2.0.0 · © 2026 PayGo Technologies Ltd.</p>
           </div>
 
           {/* ── Right column ── */}
           <div className="lg:col-span-2 flex flex-col gap-4">
 
-            <div className="bg-white rounded-3xl shadow-card overflow-hidden fu fu2">
+            <div className="bg-[var(--bg-surface)] rounded-3xl shadow-card overflow-hidden fu fu2">
               {menuItems.map((item, i) => (
                 <button
                   key={item.label}
                   onClick={item.action}
-                  className={`w-full flex items-center gap-4 px-5 py-4 text-left hover:bg-ink-faint transition-colors cursor-pointer ${
-                    i < menuItems.length - 1 ? 'border-b border-ink-border' : ''
+                  className={`w-full flex items-center gap-4 px-5 py-4 text-left hover:bg-[var(--bg-elevated)] transition-colors cursor-pointer ${
+                    i < menuItems.length - 1 ? 'border-b border-[var(--border)]' : ''
                   }`}
                 >
-                  <div className="w-9 h-9 bg-ink-faint rounded-xl flex items-center justify-center flex-shrink-0">
-                    <span className="icon-o text-ink-mid text-xl">{item.icon}</span>
+                  <div className="w-9 h-9 bg-[var(--bg-elevated)] rounded-xl flex items-center justify-center flex-shrink-0">
+                    <span className="icon-o text-[var(--text-primary)]-mid text-xl">{item.icon}</span>
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="font-display font-semibold text-ink text-sm">{item.label}</p>
-                    {item.sub && <p className="text-xs text-ink-muted truncate">{item.sub}</p>}
+                    <p className="font-display font-semibold text-[var(--text-primary)] text-sm">{item.label}</p>
+                    {item.sub && <p className="text-xs text-[var(--text-secondary)] truncate">{item.sub}</p>}
                   </div>
-                  <span className="icon-o text-ink-muted text-xl">chevron_right</span>
+                  <span className="icon-o text-[var(--text-secondary)] text-xl">chevron_right</span>
                 </button>
               ))}
             </div>
 
             <button
               onClick={() => setShowLogout(true)}
-              className="w-full border-2 border-ink-border text-red-500 font-display font-semibold py-4 rounded-3xl hover:bg-red-50 hover:border-red-200 active:scale-95 transition-all flex items-center justify-center gap-2 fu fu3"
+              className="w-full border-2 border-[var(--border)] text-red-500 font-display font-semibold py-4 rounded-3xl hover:bg-red-50 hover:border-red-200 active:scale-95 transition-all flex items-center justify-center gap-2 fu fu3"
             >
               <span className="icon-o text-xl">logout</span>
               Sign Out
@@ -550,12 +550,12 @@ export default function Profile() {
           onClick={() => setShowLogout(false)}
         >
           <div
-            className="bg-white w-full lg:max-w-sm rounded-t-4xl lg:rounded-3xl p-6 scale-in"
+            className="bg-[var(--bg-surface)] w-full lg:max-w-sm rounded-t-4xl lg:rounded-3xl p-6 scale-in"
             onClick={e => e.stopPropagation()}
           >
             <div className="w-10 h-1 bg-ink-border rounded-full mx-auto mb-5 lg:hidden" />
-            <h3 className="font-display font-extrabold text-xl text-ink text-center mb-2">Sign Out?</h3>
-            <p className="text-sm text-ink-muted text-center mb-6">You'll need to verify your phone number to sign back in.</p>
+            <h3 className="font-display font-extrabold text-xl text-[var(--text-primary)] text-center mb-2">Sign Out?</h3>
+            <p className="text-sm text-[var(--text-secondary)] text-center mb-6">You'll need to verify your phone number to sign back in.</p>
             <button
               onClick={handleLogout}
               className="w-full bg-red-500 text-white font-display font-bold py-4 rounded-3xl mb-3 hover:bg-red-600 active:scale-95 transition-all"
@@ -564,7 +564,7 @@ export default function Profile() {
             </button>
             <button
               onClick={() => setShowLogout(false)}
-              className="w-full bg-ink-faint text-ink font-display font-bold py-4 rounded-3xl hover:bg-ink-border active:scale-95 transition-all"
+              className="w-full bg-[var(--bg-elevated)] text-[var(--text-primary)] font-display font-bold py-4 rounded-3xl hover:bg-ink-border active:scale-95 transition-all"
             >
               Cancel
             </button>

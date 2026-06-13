@@ -15,7 +15,7 @@ export default function Auth() {
   const [step, setStep]         = useState('input')   // input | otp
   const [value, setValue]       = useState('')
   const [otp, setOtp]           = useState(['', '', '', ''])
-  const [devCode, setDevCode]   = useState(null)       // shown in yellow banner in dev mode
+  const [devCode, setDevCode]   = useState(null)       // shown in amber banner in dev mode
   const [loading, setLoading]   = useState(false)
   const [error, setError]       = useState('')
   const [resendTimer, setResendTimer] = useState(0)
@@ -69,7 +69,6 @@ export default function Auth() {
         const data = await res.json()
         if (!res.ok) throw new Error(data.message || 'Failed to send code')
 
-        // Backend returns devOtp in development mode
         if (data.devOtp) setDevCode(data.devOtp)
         else setDevCode(null)
 
@@ -78,7 +77,6 @@ export default function Auth() {
         const code = mockOtp()
         setDevCode(code)
         console.log(`[PAYG DEV] OTP for ${value}: ${code}`)
-        // Simulate network delay
         await new Promise(r => setTimeout(r, 900))
       }
 
@@ -86,7 +84,7 @@ export default function Auth() {
       startCountdown()
     } catch (e) {
       setError(e.message || 'Could not send code. Check your connection.')
-    } finally {
+    } fill {
       setLoading(false)
     }
   }
@@ -115,7 +113,7 @@ export default function Auth() {
     if (!devCode) return
     const digits = devCode.split('')
     setOtp(digits)
-    refs[3].current?.focus()
+    setTimeout(() => refs[3].current?.focus(), 50)
   }
 
   // ─── Verify OTP ───────────────────────────────────────────────────────────
@@ -140,7 +138,6 @@ export default function Auth() {
         const data = await res.json()
         if (!res.ok) throw new Error(data.message || 'Verification failed')
 
-        // Store JWT token
         if (data.token) localStorage.setItem('payg_token', data.token)
 
         login({
@@ -159,7 +156,6 @@ export default function Auth() {
           throw new Error(`Wrong code. The dev code is ${devCode} — click it to auto-fill.`)
         }
         await new Promise(r => setTimeout(r, 700))
-        // First-time users go to onboarding, returning go to dashboard
         const isNew = !localStorage.getItem('payg_returning')
         if (isNew) localStorage.setItem('payg_returning', '1')
         login({
@@ -176,51 +172,56 @@ export default function Auth() {
     }
   }
 
-  // ─── Render ───────────────────────────────────────────────────────────────
   return (
-    <div className="min-h-screen bg-white flex flex-col max-w-lg mx-auto px-5">
+    <div className="min-h-screen bg-[#0D1117] flex flex-col max-w-lg mx-auto px-5 text-[#F0F6FC]">
 
-      {/* Back */}
+      {/* Back Link */}
       <div className="pt-10">
-        <Link to="/" className="inline-flex items-center gap-1.5 text-ink-muted text-sm hover:text-ink transition-colors">
-          <span className="icon-o text-xl">arrow_back</span>
+        <Link to="/" className="inline-flex items-center gap-1.5 text-[#8B949E] text-sm hover:text-[#2DD4BF] transition-colors group">
+          <span className="icon-o text-xl group-hover:-translate-x-1 transition-transform">arrow_back</span>
           <span className="font-display font-medium">Back</span>
         </Link>
       </div>
 
-      {/* Logo */}
-      <div className="flex items-center gap-2 mt-6 mb-8">
-        <div className="w-10 h-10 rounded-2xl bg-blue-brand flex items-center justify-center shadow-blue">
-          <span className="text-white text-xl icon">shield</span>
+      {/* Application Branding Header */}
+      <div className="flex items-center gap-2.5 mt-6 mb-8">
+        <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-[#2DD4BF] to-[#0D9488] flex items-center justify-center shadow-[0_0_20px_rgba(45,212,191,0.2)]">
+          <span className="text-[#0D1117] text-xl icon">shield</span>
         </div>
-        <span className="font-display font-extrabold text-xl text-ink">PAYG</span>
+        <span className="font-display font-black text-xl text-[#F0F6FC] tracking-wide">PAYG</span>
       </div>
 
-      {/* ── STEP 1: Enter phone / email ──────────────────────────────────── */}
+      {/* ── STEP 1: Identification Input (Phone/Email Selector) ────────────────── */}
       {step === 'input' && (
-        <div className="fu">
-          <h1 className="font-display font-black text-3xl text-ink mb-1">Welcome! 👋</h1>
-          <p className="text-ink-muted mb-8">Sign in or create your account</p>
+        <div className="animate-[fadeIn_0.3s_ease-out]">
+          <h1 className="font-display font-black text-3xl text-[#F0F6FC] mb-1">Welcome! 👋</h1>
+          <p className="text-[#8B949E] text-sm mb-6">Sign in or create your automated insurance account</p>
 
-          {/* Phone / Email toggle */}
-          <div className="flex bg-ink-faint rounded-2xl p-1 mb-6">
-            {[['phone', 'smartphone', 'Phone'], ['email', 'mail', 'Email']].map(([m, ic, lb]) => (
+          {/* Custom Mode Segment Switch */}
+          <div className="flex bg-[#161B22] border border-[#30363D] rounded-2xl p-1 mb-6">
+            {[
+              ['phone', 'smartphone', 'Phone'],
+              ['email', 'mail', 'Email']
+            ].map(([m, ic, lb]) => (
               <button key={m} onClick={() => { setMode(m); setValue(''); setError('') }}
                 className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl font-display font-semibold text-sm transition-all ${
-                  mode === m ? 'bg-white text-ink shadow-card' : 'text-ink-muted'
+                  mode === m 
+                    ? 'bg-[#21262D] text-[#2DD4BF] shadow-[0_0_15px_rgba(45,212,191,0.1)] border border-[#30363D]' 
+                    : 'text-[#8B949E] hover:text-[#F0F6FC]'
                 }`}>
-                <span className="icon-o text-lg">{ic}</span> {lb}
+                <span className={`text-lg ${mode === m ? 'icon text-[#2DD4BF]' : 'icon-o'}`}>{ic}</span>
+                {lb}
               </button>
             ))}
           </div>
 
-          <label className="block text-[11px] font-display font-bold text-ink-muted uppercase tracking-wider mb-2">
+          <label className="block text-[10px] font-display font-bold text-[#8B949E] uppercase tracking-wider mb-2">
             {mode === 'phone' ? 'Phone Number' : 'Email Address'}
           </label>
 
           {mode === 'phone' ? (
             <div className="flex gap-2 mb-1">
-              <div className="flex items-center bg-ink-faint border border-ink-border rounded-2xl px-3 h-14 text-sm font-display font-semibold text-ink gap-1 flex-shrink-0">
+              <div className="flex items-center bg-[#161B22] border border-[#30363D] rounded-2xl px-3 h-14 text-sm font-display font-semibold text-[#8B949E] gap-1 flex-shrink-0">
                 🇳🇬 +234
               </div>
               <input
@@ -231,7 +232,9 @@ export default function Auth() {
                 placeholder="08012345678"
                 maxLength={11}
                 autoFocus
-                className="flex-1 bg-ink-faint border-2 border-ink-border focus:border-blue-brand rounded-2xl h-14 px-4 text-lg font-display text-ink transition-all"
+                className={`flex-1 bg-[#161B22] border-2 rounded-2xl h-14 px-4 text-lg font-display font-bold text-[#F0F6FC] transition-all outline-none ${
+                  error ? 'border-red-500/50 focus:border-red-500' : 'border-[#30363D] focus:border-[#2DD4BF]'
+                }`}
               />
             </div>
           ) : (
@@ -242,12 +245,14 @@ export default function Auth() {
               onKeyDown={e => e.key === 'Enter' && handleSend()}
               placeholder="you@example.com"
               autoFocus
-              className="w-full bg-ink-faint border-2 border-ink-border focus:border-blue-brand rounded-2xl h-14 px-4 text-base font-display text-ink transition-all"
+              className={`w-full bg-[#161B22] border-2 rounded-2xl h-14 px-4 text-base font-display font-bold text-[#F0F6FC] transition-all outline-none ${
+                error ? 'border-red-500/50 focus:border-red-500' : 'border-[#30363D] focus:border-[#2DD4BF]'
+              }`}
             />
           )}
 
           {error && (
-            <p className="text-red-500 text-xs mt-2 mb-1 flex items-center gap-1">
+            <p className="text-red-400 text-xs mt-2 flex items-center gap-1">
               <span className="icon-o text-base">error</span>{error}
             </p>
           )}
@@ -255,57 +260,66 @@ export default function Auth() {
           <button
             onClick={handleSend}
             disabled={loading}
-            className="w-full mt-5 bg-blue-brand text-white font-display font-bold py-4 rounded-3xl shadow-blue hover:bg-blue-dark active:scale-95 transition-all disabled:opacity-60 flex items-center justify-center gap-2 text-base">
-            {loading
-              ? <><span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full spin"/>Sending code…</>
-              : <><span className="icon-o text-xl">send</span>Send Verification Code</>}
+            className="w-full mt-6 bg-gradient-to-r from-[#2DD4BF] to-[#0D9488] text-[#0D1117] font-display font-bold py-4 rounded-3xl shadow-[0_4px_20px_rgba(45,212,191,0.2)] hover:opacity-90 active:scale-95 transition-all disabled:opacity-50 flex items-center justify-center gap-2 text-base">
+            {loading ? (
+              <>
+                <span className="w-5 h-5 border-2 border-[#0D1117]/30 border-t-[#0D1117] rounded-full animate-spin block"/>
+                Sending code…
+              </>
+            ) : (
+              <>
+                <span className="icon-o text-xl">send</span>
+                Send Verification Code
+              </>
+            )}
           </button>
 
-          <div className="mt-4 p-4 bg-blue-light rounded-2xl">
-            <p className="text-xs text-blue-brand font-display font-semibold flex items-start gap-2">
-              <span className="icon text-base flex-shrink-0 mt-0.5">info</span>
-              New to PAYG? We'll create your account automatically — no password needed.
+          {/* Explainer Tip Card */}
+          <div className="mt-5 p-4 bg-[#161B22] border border-[#2DD4BF]/10 rounded-2xl flex gap-3 items-start">
+            <span className="icon text-[#2DD4BF] text-lg flex-shrink-0 mt-0.5">info</span>
+            <p className="text-xs text-[#8B949E] font-display leading-relaxed">
+              New to PAYG? We'll provision your profile balance automatically — <span className="text-[#2DD4BF] font-semibold">no passwords required</span>.
             </p>
           </div>
         </div>
       )}
 
-      {/* ── STEP 2: Enter OTP ────────────────────────────────────────────── */}
+      {/* ── STEP 2: One-Time Password Verification ──────────────────────────── */}
       {step === 'otp' && (
-        <div className="fu">
-          <h1 className="font-display font-black text-3xl text-ink mb-1">
+        <div className="animate-[fadeIn_0.3s_ease-out]">
+          <h1 className="font-display font-black text-3xl text-[#F0F6FC] mb-1">
             {mode === 'phone' ? 'Check your SMS 📱' : 'Check your inbox 📧'}
           </h1>
-          <p className="text-ink-muted mb-6">
-            We sent a 4-digit code to{' '}
-            <span className="font-display font-semibold text-ink">{value}</span>
+          <p className="text-[#8B949E] text-sm mb-6">
+            We sent a validation token to{' '}
+            <span className="font-display font-bold text-[#2DD4BF]">{value}</span>
           </p>
 
-          {/* ── Dev mode banner — shows the code and lets you click to fill ── */}
+          {/* Dev Simulated Sandboxed Gateway Banner */}
           {devCode && (
             <button
               onClick={autoFill}
-              className="w-full mb-6 p-4 bg-amber-50 border-2 border-amber-300 rounded-2xl text-left hover:bg-amber-100 transition-colors group">
-              <div className="flex items-center justify-between mb-1">
+              className="w-full mb-6 p-4 bg-[#1C1A14] border-2 border-amber-500/30 rounded-2xl text-left hover:bg-[#262218] transition-colors group">
+              <div className="flex items-center justify-between mb-1.5">
                 <div className="flex items-center gap-2">
-                  <span className="icon text-amber-500 text-lg">construction</span>
-                  <p className="text-xs font-display font-bold text-amber-700">Demo mode — your code is:</p>
+                  <span className="icon text-amber-400 text-lg">construction</span>
+                  <p className="text-xs font-display font-bold text-amber-300/90">Sandbox Environment Mode:</p>
                 </div>
-                <span className="text-[10px] font-display font-bold text-amber-600 bg-amber-100 px-2 py-0.5 rounded-full group-hover:bg-amber-200 transition-colors">
-                  Click to auto-fill →
+                <span className="text-[10px] font-display font-bold text-amber-400 bg-amber-400/10 px-2 py-0.5 rounded-full group-hover:bg-amber-400/20 transition-colors">
+                  Tap to auto-fill →
                 </span>
               </div>
-              <p className="font-display font-black text-3xl text-amber-600 tracking-[0.3em] ml-7">
+              <p className="font-display font-black text-3xl text-amber-400 tracking-[0.3em] ml-7">
                 {devCode}
               </p>
-              <p className="text-[10px] text-amber-500 mt-1 ml-7">
-                This code only appears because no SMS provider is connected yet.
+              <p className="text-[10px] text-amber-500/80 mt-1.5 ml-7 leading-normal">
+                Simulated carrier loop. Tap this card to seamlessly forward the credentials into inputs.
               </p>
             </button>
           )}
 
-          <label className="block text-[11px] font-display font-bold text-ink-muted uppercase tracking-wider mb-3">
-            Verification Code
+          <label className="block text-[10px] font-display font-bold text-[#8B949E] uppercase tracking-wider mb-3">
+            Verification Token
           </label>
 
           <div className="flex gap-3 mb-1">
@@ -319,31 +333,33 @@ export default function Auth() {
                 value={d}
                 onChange={e => handleOtpChange(i, e.target.value)}
                 onKeyDown={e => handleOtpKey(i, e)}
-                className={`flex-1 aspect-square text-center font-display font-extrabold text-2xl border-2 rounded-2xl transition-all ${
-                  d ? 'border-blue-brand bg-blue-light text-blue-brand' : 'border-ink-border bg-ink-faint text-ink'
+                className={`flex-1 aspect-square text-center font-display font-black text-2xl border-2 rounded-2xl transition-all outline-none ${
+                  d 
+                    ? 'border-[#2DD4BF] bg-[#2DD4BF]/10 text-[#2DD4BF] shadow-[0_0_15px_rgba(45,212,191,0.15)]' 
+                    : 'border-[#30363D] bg-[#161B22] text-[#F0F6FC]'
                 }`}
               />
             ))}
           </div>
 
           {error && (
-            <p className="text-red-500 text-xs mt-2 mb-2 flex items-center gap-1">
+            <p className="text-red-400 text-xs mt-3 mb-1 flex items-center gap-1">
               <span className="icon-o text-base">error</span>{error}
             </p>
           )}
 
-          {/* Resend */}
-          <div className="flex items-center justify-between mt-3 mb-6">
-            <p className="text-xs text-ink-muted">Didn't receive it?</p>
+          {/* Interactive Countdown/Resend Control */}
+          <div className="flex items-center justify-between mt-4 mb-6">
+            <p className="text-xs text-[#8B949E]">Didn't receive code?</p>
             {resendTimer > 0 ? (
-              <p className="text-xs font-display text-ink-muted">
-                Resend in <span className="font-bold text-ink">{resendTimer}s</span>
+              <p className="text-xs font-display text-[#8B949E]">
+                Resend window opens in <span className="font-bold text-[#2DD4BF]">{resendTimer}s</span>
               </p>
             ) : (
               <button
                 onClick={handleResend}
-                className="text-xs font-display font-bold text-orange-brand hover:underline">
-                Resend Code
+                className="text-xs font-display font-black text-[#2DD4BF] hover:underline bg-transparent border-none outline-none cursor-pointer">
+                Resend Request
               </button>
             )}
           </div>
@@ -351,25 +367,34 @@ export default function Auth() {
           <button
             onClick={handleVerify}
             disabled={loading || otp.join('').length < 4}
-            className="w-full bg-blue-brand text-white font-display font-bold py-4 rounded-3xl shadow-blue hover:bg-blue-dark active:scale-95 transition-all disabled:opacity-60 flex items-center justify-center gap-2 text-base mb-4">
-            {loading
-              ? <><span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full spin"/>Verifying…</>
-              : <><span className="icon-o">verified</span>Verify & Continue</>}
+            className="w-full bg-gradient-to-r from-[#2DD4BF] to-[#0D9488] text-[#0D1117] font-display font-bold py-4 rounded-3xl shadow-[0_4px_20px_rgba(45,212,191,0.2)] hover:opacity-90 active:scale-95 transition-all disabled:opacity-40 flex items-center justify-center gap-2 text-base mb-4">
+            {loading ? (
+              <>
+                <span className="w-5 h-5 border-2 border-[#0D1117]/30 border-t-[#0D1117] rounded-full animate-spin block"/>
+                Authorizing session…
+              </>
+            ) : (
+              <>
+                <span className="icon-o">verified</span>
+                Verify & Continue
+              </>
+            )}
           </button>
 
           <button
             onClick={() => { setStep('input'); setOtp(['', '', '', '']); setDevCode(null); setError(''); clearInterval(timerRef.current) }}
-            className="w-full text-ink-muted text-sm font-display py-3 hover:text-ink transition-colors">
-            ← Change {mode === 'phone' ? 'phone number' : 'email'}
+            className="w-full text-[#8B949E] text-xs font-display py-2 hover:text-[#F0F6FC] transition-colors bg-transparent border-none outline-none">
+            ← Change address entry details
           </button>
         </div>
       )}
 
-      <p className="mt-auto py-6 text-center text-xs text-ink-muted leading-relaxed">
-        By continuing you agree to our{' '}
-        <Link to="/terms" className="text-blue-brand font-display font-semibold">Terms of Service</Link>{' '}
-        and{' '}
-        <Link to="/privacy" className="text-blue-brand font-display font-semibold">Privacy Policy</Link>
+      {/* Footer Legal Terms Agreement Links */}
+      <p className="mt-auto py-6 text-center text-[11px] text-[#8B949E] leading-relaxed">
+        By authentication, you consent to our{' '}
+        <Link to="/terms" className="text-[#2DD4BF] font-semibold hover:underline">Terms of Service</Link>{' '}
+        and confirm access configuration under our{' '}
+        <Link to="/privacy" className="text-[#2DD4BF] font-semibold hover:underline">Privacy Policy</Link>.
       </p>
     </div>
   )

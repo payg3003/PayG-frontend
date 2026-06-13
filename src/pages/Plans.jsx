@@ -5,208 +5,242 @@ import AppLayout from '../components/AppLayout.jsx'
 import PageHeader from '../components/PageHeader.jsx'
 
 const HEALTH_PLANS = [
-  { id:1, name:'Basic',    price:500,  tagline:'Essential protection',          icon:'local_hospital',   iconBg:'bg-blue-light',  iconColor:'text-blue-brand',   accentBorder:'border-blue-muted',
-    features:['Clinic visits & consultations','Basic lab tests','Digital health records','SMS health alerts'] },
-  { id:2, name:'Standard', price:1000, tagline:'Comprehensive care',            icon:'health_and_safety', iconBg:'bg-blue-brand',  iconColor:'text-white',        accentBorder:'border-blue-brand', featured:true,
-    features:['Everything in Basic','24/7 virtual consultations','Specialized lab tests','Pharmacy discounts (20%)','Specialist referrals','Mental health support'] },
-  { id:3, name:'Premium',  price:2000, tagline:'Full coverage, no compromises', icon:'workspace_premium', iconBg:'bg-amber-50',    iconColor:'text-amber-600',    accentBorder:'border-amber-300',
-    features:['Everything in Standard','Private hospital ward','International coverage','Dedicated health concierge','Annual full-body checkup','Dental & optical care'] },
+  { 
+    id: 1, 
+    name: 'Basic',    
+    price: 500,  
+    tagline: 'Essential protection',          
+    icon: 'local_hospital',   
+    featured: false,
+    features: ['Clinic visits & consultations', 'Basic lab tests', 'Digital health records', 'SMS health alerts'] 
+  },
+  { 
+    id: 2, 
+    name: 'Standard', 
+    price: 1000, 
+    tagline: 'Comprehensive care',            
+    icon: 'health_and_safety', 
+    featured: true,
+    features: ['Everything in Basic', '24/7 virtual consultations', 'Specialized lab tests', 'Pharmacy discounts (20%)', 'Specialist referrals', 'Mental health support'] 
+  },
+  { 
+    id: 3, 
+    name: 'Premium',  
+    price: 2000, 
+    tagline: 'Full coverage, no compromises', 
+    icon: 'workspace_premium', 
+    featured: false,
+    features: ['Everything in Standard', 'Private hospital ward', 'International coverage', 'Dedicated health concierge', 'Annual full-body checkup', 'Dental & optical care'] 
+  },
 ]
 
 const LIFE_PLANS = [
-  { id:4, name:'Basic',    price:800,  tagline:'Core life coverage',            icon:'shield',           iconBg:'bg-blue-light',  iconColor:'text-blue-brand',   accentBorder:'border-blue-muted',
-    features:['₦2M death benefit','Accidental death cover','Beneficiary payout','Annual policy review'] },
-  { id:5, name:'Standard', price:1500, tagline:'Family financial security',     icon:'family_restroom',  iconBg:'bg-blue-brand',  iconColor:'text-white',        accentBorder:'border-blue-brand', featured:true,
-    features:['Everything in Basic','₦5M death benefit','Critical illness rider','Disability cover','Education fund for kids','Monthly family stipend'] },
-  { id:6, name:'Premium',  price:3000, tagline:'Wealth & legacy protection',    icon:'workspace_premium', iconBg:'bg-amber-50',   iconColor:'text-amber-600',    accentBorder:'border-amber-300',
-    features:['Everything in Standard','₦15M death benefit','Investment-linked savings','International coverage','Estate planning support','Priority claims processing'] },
-]
-
-const INSURANCE_TYPES = [
-  { id: 'health', label: 'Health Insurance', icon: 'health_and_safety', desc: 'Cover medical bills & hospital visits' },
-  { id: 'life',   label: 'Life Insurance',   icon: 'shield',            desc: 'Protect your family\'s financial future' },
+  { 
+    id: 4, 
+    name: 'Basic Life', 
+    price: 800, 
+    tagline: 'Essential peace of mind', 
+    icon: 'shield', 
+    featured: false,
+    features: ['₦500,000 life cover', 'Instant payout to beneficiary', 'No medical exams', 'SMS status tracking'] 
+  }
 ]
 
 export default function Plans() {
-  const { subscription, changePlan, changeInsuranceType } = useApp()
+  const { subscription, changePlan } = useApp()
   const navigate = useNavigate()
+  const currentPlan = subscription?.planName || 'Standard'
+  const [selected, setSelected] = useState(currentPlan)
+  const [saving, setSaving] = useState(false)
+  const [saved, setSaved] = useState(false)
 
-  const [insuranceType, setInsuranceType] = useState(subscription.insuranceType || 'health')
-  const PLANS = insuranceType === 'health' ? HEALTH_PLANS : LIFE_PLANS
+  const selectedPlan = HEALTH_PLANS.find(p => p.name === selected) || LIFE_PLANS.find(p => p.name === selected)
+  const hasChanges = selected !== currentPlan
 
-  const [selected, setSelected]   = useState(subscription.plan)
-  const [expanded, setExpanded]   = useState(null)
-  const [saving, setSaving]       = useState(false)
-  const [saved, setSaved]         = useState(false)
-
-  const selectedPlan = PLANS.find(p => p.name === selected)
-  const currentPlan  = PLANS.find(p => p.name === subscription.plan)
-  const isUpgrade    = selectedPlan && currentPlan && selectedPlan.price > currentPlan.price
-  const isDowngrade  = selectedPlan && currentPlan && selectedPlan.price < currentPlan.price
-
-  const handleTypeSwitch = (type) => {
-    setInsuranceType(type)
-    setSelected('Standard')
-    setExpanded(null)
+  const getPrice = (name) => {
+    const p = HEALTH_PLANS.find(x => x.name === name) || LIFE_PLANS.find(x => x.name === name)
+    return p ? p.price : 0
   }
 
+  const isUpgrade = selectedPlan ? getPrice(selected) > getPrice(currentPlan) : true
+
   const handleConfirm = () => {
-    if (selected === subscription.plan && insuranceType === (subscription.insuranceType || 'health')) {
-      navigate('/dashboard'); return
+    if (!hasChanges) { 
+      navigate('/dashboard')
+      return
     }
     setSaving(true)
     setTimeout(() => {
-      changeInsuranceType(insuranceType)
-      if (selectedPlan) changePlan(selectedPlan.id, selectedPlan.name, selectedPlan.price)
-      setSaving(false); setSaved(true)
-      setTimeout(() => navigate('/dashboard'), 1200)
-    }, 1100)
+      changePlan(selected)
+      setSaving(false)
+      setSaved(true)
+      setTimeout(() => navigate('/dashboard'), 1000)
+    }, 1200)
   }
 
-  const typeChanged = insuranceType !== (subscription.insuranceType || 'health')
-  const planChanged = selected !== subscription.plan
-  const hasChanges  = typeChanged || planChanged
-
   return (
-    <>
-      <AppLayout>
-        <div className="pb-36 md:pb-20 md:pt-20">
-          <PageHeader title="Choose a Plan" subtitle="Change takes effect next billing cycle"/>
-          <div className="px-4 md:px-6 pt-4 flex flex-col gap-4">
+    <AppLayout>
+      <PageHeader 
+        title="Insurance Plans" 
+        subtitle="Select a coverage matrix tier tailored directly into your network micro-billing channel." 
+      />
+      
+      <div className="min-h-screen py-8 px-6 lg:px-10 pb-36 relative" style={{ backgroundColor: 'var(--bg)', color: 'var(--text)' }}>
+        {/* Background Radial Glow */}
+        <div className="absolute top-[20%] left-1/4 w-[500px] h-[500px] rounded-full opacity-5 pointer-events-none filter blur-[120px]" style={{ background: 'var(--primary)' }}></div>
 
-            {/* Current plan info */}
-            <div className="bg-blue-light border border-blue-muted rounded-2xl p-3 flex items-center gap-2">
-              <span className="icon text-blue-brand text-lg">info</span>
-              <p className="text-xs font-display font-semibold text-blue-brand">
-                You're on the <span className="font-black">{subscription.plan}</span> plan · ₦{subscription.planPrice.toLocaleString()}/mo
-              </p>
-            </div>
+        {/* Health Plans Section */}
+        <div className="max-w-5xl mx-auto mb-12">
+          <h2 className="font-display font-black text-xs uppercase tracking-widest mb-6" style={{ color: 'var(--teal)' }}>Health Insurance Protocols</h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {HEALTH_PLANS.map(plan => {
+              const isCurrent = plan.name === currentPlan
+              const isSelected = plan.name === selected
 
-            {/* Insurance Type Toggle */}
-            <div>
-              <p className="text-xs font-display font-bold text-ink-muted uppercase tracking-wider mb-2">Insurance Type</p>
-              <div className="grid grid-cols-2 gap-3">
-                {INSURANCE_TYPES.map(t => {
-                  const isActive = insuranceType === t.id
-                  const isCurrent = (subscription.insuranceType || 'health') === t.id
-                  return (
-                    <button key={t.id} onClick={() => handleTypeSwitch(t.id)}
-                      className={`rounded-2xl border-2 p-4 text-left transition-all duration-200 flex flex-col gap-1.5
-                        ${isActive ? 'border-blue-brand bg-blue-light' : 'border-ink-border bg-white hover:border-blue-muted'}`}>
-                      <div className="flex items-center justify-between">
-                        <div className={`w-9 h-9 rounded-xl flex items-center justify-center
-                          ${isActive ? 'bg-blue-brand' : 'bg-ink-faint'}`}>
-                          <span className={`icon text-xl ${isActive ? 'text-white' : 'text-ink-muted'}`}>{t.icon}</span>
-                        </div>
-                        <div className="flex items-center gap-1.5">
-                          {isCurrent && <span className="text-[9px] bg-green-light text-green-brand font-display font-bold px-2 py-0.5 rounded-full">Current</span>}
-                          <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center transition-all
-                            ${isActive ? 'border-blue-brand bg-blue-brand' : 'border-ink-border'}`}>
-                            {isActive && <span className="icon text-white text-[10px]">check</span>}
-                          </div>
-                        </div>
+              return (
+                <div 
+                  key={plan.id} 
+                  onClick={() => setSelected(plan.name)}
+                  className={`p-6 rounded-2xl border transition-all cursor-pointer relative overflow-hidden flex flex-col justify-between ${
+                    isSelected ? 'scale-[1.02] shadow-2xl' : 'hover:scale-[1.01]'
+                  }`}
+                  style={{ 
+                    backgroundColor: isSelected ? 'var(--surface-2)' : 'var(--surface)', 
+                    borderColor: isSelected ? 'var(--primary-light)' : 'var(--border)' 
+                  }}
+                >
+                  {plan.featured && (
+                    <div className="absolute top-0 left-0 right-0 h-[3px]" style={{ background: 'linear-gradient(90deg, var(--primary), var(--teal))' }}></div>
+                  )}
+
+                  <div>
+                    <div className="flex justify-between items-center mb-4">
+                      <div className="w-10 h-10 rounded-xl flex items-center justify-center border" style={{ backgroundColor: 'var(--surface-2)', borderColor: 'var(--border)' }}>
+                        <span className="icon text-white">{plan.icon}</span>
                       </div>
-                      <p className={`font-display font-extrabold text-sm ${isActive ? 'text-blue-brand' : 'text-ink'}`}>{t.label}</p>
-                      <p className="text-[11px] text-ink-muted leading-snug">{t.desc}</p>
-                    </button>
-                  )
-                })}
-              </div>
-            </div>
-
-            {/* Plan Cards */}
-            <div>
-              <p className="text-xs font-display font-bold text-ink-muted uppercase tracking-wider mb-2">Select a Tier</p>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                {PLANS.map((p, idx) => {
-                  const isSelected = selected === p.name
-                  const isCurrent  = subscription.plan === p.name && !typeChanged
-                  const isOpen     = expanded === p.name
-                  return (
-                    <div key={p.id}
-                      className={`bg-white rounded-3xl border-2 overflow-hidden shadow-card transition-all duration-200 fu`}
-                      style={{ animationDelay: `${idx * 0.08}s` }}>
-                      <button className="w-full text-left p-5" onClick={() => { setSelected(p.name); setExpanded(isOpen ? null : p.name) }}>
-                        {p.featured && (
-                          <div className="flex justify-end mb-2">
-                            <span className="text-[9px] bg-orange-brand text-white font-display font-bold px-2.5 py-1 rounded-full uppercase tracking-wide">Most Popular</span>
-                          </div>
-                        )}
-                        <div className="flex items-center gap-3 mb-3">
-                          <div className={`w-11 h-11 rounded-2xl ${p.iconBg} flex items-center justify-center flex-shrink-0`}>
-                            <span className={`icon text-2xl ${p.iconColor}`}>{p.icon}</span>
-                          </div>
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2 flex-wrap">
-                              <span className="font-display font-extrabold text-ink">{p.name}</span>
-                              {isCurrent && <span className="text-[9px] bg-green-light text-green-brand font-display font-bold px-2 py-0.5 rounded-full">Current</span>}
-                            </div>
-                            <p className="text-xs text-ink-muted">{p.tagline}</p>
-                          </div>
-                          <div className="text-right flex-shrink-0">
-                            <p className="font-display font-black text-xl text-ink">₦{p.price.toLocaleString()}</p>
-                            <p className="text-[10px] text-ink-muted">/month</p>
-                          </div>
-                        </div>
-                        <div className={`flex items-center justify-between border-t pt-3 ${isSelected ? 'border-blue-brand' : 'border-ink-border'}`}>
-                          <div className="flex items-center gap-2">
-                            <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all ${isSelected ? 'border-blue-brand bg-blue-brand' : 'border-ink-border'}`}>
-                              {isSelected && <span className="icon text-white text-xs">check</span>}
-                            </div>
-                            <span className={`text-xs font-display font-semibold ${isSelected ? 'text-blue-brand' : 'text-ink-muted'}`}>
-                              {isSelected ? 'Selected' : 'Select this plan'}
-                            </span>
-                          </div>
-                          <span className={`icon-o text-ink-muted text-xl transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}>expand_more</span>
-                        </div>
-                      </button>
-                      {isOpen && (
-                        <div className="px-5 pb-5 border-t border-ink-border bg-ink-faint scale-in">
-                          <p className="text-[10px] font-display font-bold text-ink-muted uppercase tracking-wider mt-4 mb-3">What's included</p>
-                          <div className="flex flex-col gap-2">
-                            {p.features.map((f, i) => (
-                              <div key={i} className="flex items-center gap-2.5 text-sm text-ink">
-                                <span className="icon text-base text-green-brand flex-shrink-0">check_circle</span> {f}
-                              </div>
-                            ))}
-                          </div>
-                        </div>
+                      {isCurrent && (
+                        <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded border" style={{ backgroundColor: 'rgba(20,184,166,0.1)', borderColor: 'var(--teal)', color: 'var(--teal)' }}>
+                          Active Plan
+                        </span>
                       )}
                     </div>
-                  )
-                })}
-              </div>
-            </div>
 
-            {/* Change notice */}
-            {hasChanges && (
-              <div className={`rounded-2xl p-4 flex gap-2 items-start border fu ${isUpgrade || typeChanged ? 'bg-green-light border-green-muted' : 'bg-orange-light border-orange-muted'}`}>
-                <span className={`icon text-xl flex-shrink-0 ${isUpgrade || typeChanged ? 'text-green-brand' : 'text-orange-brand'}`}>
-                  {typeChanged ? 'swap_horiz' : isUpgrade ? 'arrow_upward' : 'arrow_downward'}
-                </span>
-                <p className={`text-xs font-display font-semibold leading-relaxed ${isUpgrade || typeChanged ? 'text-green-brand' : 'text-orange-brand'}`}>
-                  {typeChanged
-                    ? `Switching to ${insuranceType === 'health' ? 'Health' : 'Life'} Insurance — ${selected} plan at ₦${selectedPlan?.price.toLocaleString()}/month. Change takes effect next billing cycle.`
-                    : isUpgrade
-                      ? `Upgrading to ${selected}. Your wallet will reset and you'll pay ₦${selectedPlan?.price.toLocaleString()}/month from next cycle.`
-                      : `Downgrading to ${selected}. Change takes effect at the start of your next billing cycle.`}
-                </p>
-              </div>
-            )}
+                    <h3 className="font-display font-black text-xl text-white mb-1">{plan.name}</h3>
+                    <p className="text-xs mb-4" style={{ color: 'var(--text-muted)' }}>{plan.tagline}</p>
+                    
+                    <div className="flex items-baseline gap-1 mb-6">
+                      <span className="text-2xl font-black text-white">₦{plan.price.toLocaleString()}</span>
+                      <span className="text-xs" style={{ color: 'var(--text-muted)' }}>/month</span>
+                    </div>
+
+                    <div className="w-full h-px mb-6" style={{ backgroundColor: 'var(--border)' }}></div>
+
+                    <ul className="flex flex-col gap-3">
+                      {plan.features.map((f, i) => (
+                        <li key={i} className="flex items-start gap-2.5 text-xs leading-normal" style={{ color: 'rgba(255,255,255,0.75)' }}>
+                          <span className="icon text-sm mt-0.5" style={{ color: 'var(--teal)' }}>check_circle</span>
+                          <span>{f}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+              )
+            })}
           </div>
+        </div>
 
-          {/* Confirm button */}
-          <div className="fixed bottom-20 md:bottom-6 left-0 md:left-20 lg:left-56 right-0 px-4 md:px-6 z-30 max-w-3xl md:mx-auto">
-            <button onClick={handleConfirm} disabled={saving || saved}
-              className={`w-full font-display font-bold py-4 rounded-3xl text-white text-base transition-all active:scale-95 flex items-center justify-center gap-2 ${saved ? 'bg-green-brand' : 'bg-blue-brand hover:bg-blue-dark shadow-blue'} disabled:opacity-70`}>
-              {saving ? <><span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full spin"/> Saving…</>
-              : saved   ? <><span className="icon">check_circle</span> Plan Updated!</>
-              : !hasChanges ? <><span className="icon-o">check</span> Keep {selected} Plan</>
-              : <><span className="icon-o">save</span> Confirm — {selected} · ₦{selectedPlan?.price.toLocaleString()}/mo</>}
+        {/* Life Plans Section */}
+        <div className="max-w-5xl mx-auto">
+          <h2 className="font-display font-black text-xs uppercase tracking-widest mb-6" style={{ color: 'var(--primary-light)' }}>Life Coverage Matrix</h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {LIFE_PLANS.map(plan => {
+              const isCurrent = plan.name === currentPlan
+              const isSelected = plan.name === selected
+
+              return (
+                <div 
+                  key={plan.id} 
+                  onClick={() => setSelected(plan.name)}
+                  className={`p-6 rounded-2xl border transition-all cursor-pointer relative overflow-hidden flex flex-col justify-between ${
+                    isSelected ? 'scale-[1.02] shadow-2xl' : 'hover:scale-[1.01]'
+                  }`}
+                  style={{ 
+                    backgroundColor: isSelected ? 'var(--surface-2)' : 'var(--surface)', 
+                    borderColor: isSelected ? 'var(--primary-light)' : 'var(--border)' 
+                  }}
+                >
+                  <div>
+                    <div className="flex justify-between items-center mb-4">
+                      <div className="w-10 h-10 rounded-xl flex items-center justify-center border" style={{ backgroundColor: 'var(--surface-2)', borderColor: 'var(--border)' }}>
+                        <span className="icon text-white">{plan.icon}</span>
+                      </div>
+                      {isCurrent && (
+                        <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded border" style={{ backgroundColor: 'rgba(20,184,166,0.1)', borderColor: 'var(--teal)', color: 'var(--teal)' }}>
+                          Active Plan
+                        </span>
+                      )}
+                    </div>
+
+                    <h3 className="font-display font-black text-xl text-white mb-1">{plan.name}</h3>
+                    <p className="text-xs mb-4" style={{ color: 'var(--text-muted)' }}>{plan.tagline}</p>
+                    
+                    <div className="flex items-baseline gap-1 mb-6">
+                      <span className="text-2xl font-black text-white">₦{plan.price.toLocaleString()}</span>
+                      <span className="text-xs" style={{ color: 'var(--text-muted)' }}>/month</span>
+                    </div>
+
+                    <div className="w-full h-px mb-6" style={{ backgroundColor: 'var(--border)' }}></div>
+
+                    <ul className="flex flex-col gap-3">
+                      {plan.features.map((f, i) => (
+                        <li key={i} className="flex items-start gap-2.5 text-xs leading-normal" style={{ color: 'rgba(255,255,255,0.75)' }}>
+                          <span className="icon text-sm mt-0.5" style={{ color: 'var(--teal)' }}>check_circle</span>
+                          <span>{f}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+
+        {/* Fixed Action Floating Box */}
+        <div className="fixed bottom-6 left-0 right-0 z-40 px-6 max-w-lg mx-auto w-full">
+          <div className="p-4 border rounded-2xl shadow-2xl backdrop-blur-md flex flex-col gap-4" style={{ backgroundColor: 'rgba(19, 25, 38, 0.95)', borderColor: 'var(--border)' }}>
+            {hasChanges && (
+              <p className="text-xs text-center font-medium leading-relaxed" style={{ color: 'var(--orange)' }}>
+                {isUpgrade 
+                  ? `Upgrading to ${selected}. Next premium cycle extracts ₦${selectedPlan?.price.toLocaleString()}/mo.`
+                  : `Downgrading to ${selected}. Structural updates switch over next billing interval.`}
+              </p>
+            )}
+            
+            <button 
+              onClick={handleConfirm} 
+              disabled={saving || saved}
+              className="w-full py-3.5 rounded-xl font-bold text-xs uppercase tracking-wider text-white transition-all active:scale-95 flex items-center justify-center gap-2"
+              style={{ background: saved ? 'var(--teal)' : 'linear-gradient(90deg, var(--primary), var(--primary-light))' }}
+            >
+              {saving ? (
+                <>
+                  <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  Synchronizing Node...
+                </>
+              ) : saved ? (
+                'Plan Configured!'
+              ) : !hasChanges ? (
+                `Keep ${selected} Structure`
+              ) : (
+                `Confirm Tier Switch`
+              )}
             </button>
           </div>
         </div>
-      </AppLayout>
-    </>
+
+      </div>
+    </AppLayout>
   )
 }
