@@ -15,6 +15,7 @@ const DEFAULT_SUB = {
   planPrice: 1000,
   policyNumber: 'PAYG-2026-004821',
   nextPaymentDate: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString(),
+  insuranceType: 'health', // 'health' | 'life'
 }
 
 const MOCK_TRANSACTIONS = []
@@ -157,6 +158,20 @@ export function AppProvider({ children }) {
     }))
   }, [])
 
+  const changeInsuranceType = useCallback((type) => {
+    if (type !== 'health' && type !== 'life') return
+    setSubscription(prev => ({
+      ...prev,
+      insuranceType: type,
+      // Reset plan selection when switching type
+      plan: 'Standard',
+      planId: 2,
+      planPrice: type === 'health' ? 1000 : 1500,
+      walletBalance: 0,
+      status: 'pending',
+    }))
+  }, [])
+
   // ---------------- CLAIMS ----------------
   const submitClaim = useCallback((claimData) => {
     if (!claimData || typeof claimData !== 'object') return null
@@ -203,6 +218,7 @@ export function AppProvider({ children }) {
       setSubscription,
       changePlan,
       cancelSubscription,
+      changeInsuranceType,
 
       // payments
       addPayment,
