@@ -3,32 +3,77 @@ import { Link, useNavigate } from 'react-router-dom'
 import { useApp } from '../context/AppContext.jsx'
 
 const BASE = import.meta.env.VITE_API_BASE_URL
-
-// ─── Determines if we have a real backend to talk to ─────────────────────────
 const hasBackend = () => Boolean(BASE && BASE !== 'https://payg-mvp2-backend.onrender.com' || false)
-
-// ─── Generate a local mock OTP for dev/demo mode ─────────────────────────────
 const mockOtp = () => String(Math.floor(1000 + Math.random() * 9000))
 
+/* ─── Shared tokens (inline so this file is self-contained) ─────────────── */
+const T = {
+  s0: '#0D1117', s1: '#161B22', s2: '#21262D',
+  t4: '#2DD4BF', t6: '#0D9488',
+  ink: '#F0F6FC', muted: '#8B949E', border: '#30363D',
+}
+
+const css = `
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .auth-spin { animation: spin 0.8s linear infinite; }
+  .auth-input {
+    width: 100%; background: ${T.s2}; border: 1.5px solid ${T.border};
+    border-radius: 14px; height: 54px; padding: 0 16px;
+    color: ${T.ink}; font-size: 16px; font-family: inherit;
+    transition: border-color 0.18s;
+    outline: none;
+  }
+  .auth-input:focus { border-color: ${T.t4}; }
+  .auth-input::placeholder { color: ${T.muted}; }
+  .auth-input-filled { border-color: ${T.t4}; background: rgba(45,212,191,0.06); color: ${T.t4}; }
+  .auth-otp {
+    flex: 1; aspect-ratio: 1; text-align: center;
+    background: ${T.s2}; border: 1.5px solid ${T.border};
+    border-radius: 14px; font-size: 26px; font-weight: 900;
+    color: ${T.ink}; font-family: inherit;
+    transition: border-color 0.18s, background 0.18s;
+    outline: none;
+  }
+  .auth-otp:focus { border-color: ${T.t4}; }
+  .auth-otp.filled { border-color: ${T.t4}; background: rgba(45,212,191,0.08); color: ${T.t4}; }
+  .auth-tab { flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px;
+    padding: 10px; border-radius: 10px; border: none; cursor: pointer;
+    font-family: inherit; font-size: 13px; font-weight: 700; transition: all 0.18s; }
+  .auth-tab.active { background: ${T.s1}; color: ${T.ink}; box-shadow: 0 1px 6px rgba(0,0,0,0.4); }
+  .auth-tab.inactive { background: transparent; color: ${T.muted}; }
+  .teal-btn {
+    width: 100%; background: linear-gradient(135deg, ${T.t4}, ${T.t6});
+    color: #0D1117; font-weight: 800; font-size: 15px; font-family: inherit;
+    border: none; border-radius: 14px; height: 52px; cursor: pointer;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    transition: opacity 0.18s, transform 0.1s;
+  }
+  .teal-btn:hover { opacity: 0.92; }
+  .teal-btn:active { transform: scale(0.98); }
+  .teal-btn:disabled { opacity: 0.45; cursor: not-allowed; transform: none; }
+  .label {
+    display: block; font-size: 10px; font-weight: 700; letter-spacing: 1.2px;
+    text-transform: uppercase; color: ${T.muted}; margin-bottom: 7px;
+  }
+`
+
 export default function Auth() {
-  const [mode, setMode]         = useState('phone')
-  const [step, setStep]         = useState('input')   // input | otp
-  const [value, setValue]       = useState('')
-  const [otp, setOtp]           = useState(['', '', '', ''])
-  const [devCode, setDevCode]   = useState(null)       // shown in amber banner in dev mode
-  const [loading, setLoading]   = useState(false)
-  const [error, setError]       = useState('')
+  const [mode, setMode]       = useState('phone')
+  const [step, setStep]       = useState('input')
+  const [value, setValue]     = useState('')
+  const [otp, setOtp]         = useState(['', '', '', ''])
+  const [devCode, setDevCode] = useState(null)
+  const [loading, setLoading] = useState(false)
+  const [error, setError]     = useState('')
   const [resendTimer, setResendTimer] = useState(0)
   const refs = [useRef(), useRef(), useRef(), useRef()]
   const timerRef = useRef(null)
   const navigate = useNavigate()
   const { login } = useApp()
 
-  // ─── Validation ────────────────────────────────────────────────────────────
   const validate = () => {
     if (mode === 'phone') {
-      const clean = value.replace(/\s/g, '')
-      if (!/^0[789]\d{9}$/.test(clean))
+      if (!/^0[789]\d{9}$/.test(value.replace(/\s/g, '')))
         return 'Enter a valid Nigerian number — e.g. 08012345678'
     }
     if (mode === 'email') {
@@ -38,7 +83,6 @@ export default function Auth() {
     return null
   }
 
-  // ─── Start resend countdown (60 seconds) ───────────────────────────────────
   const startCountdown = () => {
     setResendTimer(60)
     timerRef.current = setInterval(() => {
@@ -49,56 +93,36 @@ export default function Auth() {
     }, 1000)
   }
 
-  // ─── Send OTP ──────────────────────────────────────────────────────────────
   const handleSend = async () => {
     const err = validate()
     if (err) { setError(err); return }
-    setError('')
-    setLoading(true)
-
+    setError(''); setLoading(true)
     try {
       if (hasBackend()) {
-        // ── Real backend ─────────────────────────────────────────────────────
         const res = await fetch(`${BASE}/auth/send-otp`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(
-            mode === 'phone' ? { phone: value } : { email: value }
-          ),
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(mode === 'phone' ? { phone: value } : { email: value }),
         })
         const data = await res.json()
         if (!res.ok) throw new Error(data.message || 'Failed to send code')
-
-        if (data.devOtp) setDevCode(data.devOtp)
-        else setDevCode(null)
-
+        if (data.devOtp) setDevCode(data.devOtp); else setDevCode(null)
       } else {
-        // ── No backend — generate local code and show it on screen ───────────
         const code = mockOtp()
         setDevCode(code)
-        console.log(`[PAYG DEV] OTP for ${value}: ${code}`)
         await new Promise(r => setTimeout(r, 900))
       }
-
-      setStep('otp')
-      startCountdown()
+      setStep('otp'); startCountdown()
     } catch (e) {
       setError(e.message || 'Could not send code. Check your connection.')
-    } finally {
-      setLoading(false)
-    }
+    } finally { setLoading(false) }
   }
 
-  // ─── Resend ────────────────────────────────────────────────────────────────
   const handleResend = async () => {
     if (resendTimer > 0) return
-    setOtp(['', '', '', ''])
-    setDevCode(null)
-    setError('')
+    setOtp(['', '', '', '']); setDevCode(null); setError('')
     await handleSend()
   }
 
-  // ─── OTP input handling ────────────────────────────────────────────────────
   const handleOtpChange = (i, val) => {
     if (!/^\d*$/.test(val)) return
     const n = [...otp]; n[i] = val; setOtp(n)
@@ -108,294 +132,254 @@ export default function Auth() {
     if (e.key === 'Backspace' && !otp[i] && i > 0) refs[i - 1].current?.focus()
   }
 
-  // ─── Auto-fill from dev banner ────────────────────────────────────────────
   const autoFill = () => {
     if (!devCode) return
-    const digits = devCode.split('')
-    setOtp(digits)
-    setTimeout(() => refs[3].current?.focus(), 50)
+    setOtp(devCode.split(''))
+    refs[3].current?.focus()
   }
 
-  // ─── Verify OTP ───────────────────────────────────────────────────────────
   const handleVerify = async () => {
     const code = otp.join('')
     if (code.length < 4) { setError('Enter the 4-digit code'); return }
-    setError('')
-    setLoading(true)
-
+    setError(''); setLoading(true)
     try {
       if (hasBackend()) {
-        // ── Real backend verification ────────────────────────────────────────
-        const payload = mode === 'phone'
-          ? { phone: value, otp: code }
-          : { email: value, otp: code }
-
+        const payload = mode === 'phone' ? { phone: value, otp: code } : { email: value, otp: code }
         const res = await fetch(`${BASE}/auth/verify-otp`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload),
         })
         const data = await res.json()
         if (!res.ok) throw new Error(data.message || 'Verification failed')
-
         if (data.token) localStorage.setItem('payg_token', data.token)
-
-        login({
-          id:          data.user.id,
-          phone:       data.user.phone,
-          email:       data.user.email,
-          firstName:   data.user.firstName,
-          lastName:    data.user.lastName,
-          isOnboarded: data.user.isOnboarded,
-        })
+        login({ id: data.user.id, phone: data.user.phone, email: data.user.email,
+          firstName: data.user.firstName, lastName: data.user.lastName, isOnboarded: data.user.isOnboarded })
         navigate(data.isNew ? '/onboarding' : '/dashboard')
-
       } else {
-        // ── Dev mode: accept the shown code ──────────────────────────────────
-        if (code !== devCode) {
-          throw new Error(`Wrong code. The dev code is ${devCode} — click it to auto-fill.`)
-        }
+        if (code !== devCode) throw new Error(`Wrong code. Dev code is ${devCode} — click it to auto-fill.`)
         await new Promise(r => setTimeout(r, 700))
         const isNew = !localStorage.getItem('payg_returning')
         if (isNew) localStorage.setItem('payg_returning', '1')
-        login({
-          phone: mode === 'phone' ? value : null,
-          email: mode === 'email' ? value : null,
-          firstName: null,
-        })
+        login({ phone: mode === 'phone' ? value : null, email: mode === 'email' ? value : null, firstName: null })
         navigate(isNew ? '/onboarding' : '/dashboard')
       }
     } catch (e) {
       setError(e.message || 'Verification failed. Try again.')
-    } finally {
-      setLoading(false)
-    }
+    } finally { setLoading(false) }
   }
 
   return (
-    <div className="min-h-screen bg-[#0D1117] flex flex-col max-w-lg mx-auto px-5 text-[#F0F6FC]">
+    <div style={{
+      minHeight: '100vh', background: T.s0, color: T.ink,
+      display: 'flex', flexDirection: 'column',
+      maxWidth: 480, margin: '0 auto', padding: '0 24px',
+      position: 'relative',
+    }}>
+      <style>{css}</style>
 
-      {/* Back Link */}
-      <div className="pt-10">
-        <Link to="/" className="inline-flex items-center gap-1.5 text-[#8B949E] text-sm hover:text-[#2DD4BF] transition-colors group">
-          <span className="icon-o text-xl group-hover:-translate-x-1 transition-transform">arrow_back</span>
-          <span className="font-display font-medium">Back</span>
-        </Link>
-      </div>
+      {/* ambient glow */}
+      <div style={{
+        position: 'fixed', top: 0, left: '50%', transform: 'translateX(-50%)',
+        width: 500, height: 300,
+        background: 'radial-gradient(ellipse, rgba(45,212,191,0.09) 0%, transparent 70%)',
+        pointerEvents: 'none', zIndex: 0,
+      }} />
 
-      {/* Application Branding Header */}
-      <div className="flex items-center gap-2.5 mt-6 mb-8">
-        <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-[#2DD4BF] to-[#0D9488] flex items-center justify-center shadow-[0_0_20px_rgba(45,212,191,0.2)]">
-          <span className="text-[#0D1117] text-xl icon">shield</span>
+      <div style={{ position: 'relative', zIndex: 1, display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
+
+        {/* Back */}
+        <div style={{ paddingTop: 36 }}>
+          <Link to="/" style={{
+            display: 'inline-flex', alignItems: 'center', gap: 6,
+            color: T.muted, fontSize: 14, fontWeight: 600, textDecoration: 'none',
+          }}>
+            <span className="icon-o" style={{ fontSize: 20 }}>arrow_back</span>
+            Back
+          </Link>
         </div>
-        <span className="font-display font-black text-xl text-[#F0F6FC] tracking-wide">PAYG</span>
-      </div>
 
-      {/* ── STEP 1: Identification Input (Phone/Email Selector) ────────────────── */}
-      {step === 'input' && (
-        <div className="animate-[fadeIn_0.3s_ease-out]">
-          <h1 className="font-display font-black text-3xl text-[#F0F6FC] mb-1">Welcome! 👋</h1>
-          <p className="text-[#8B949E] text-sm mb-6">Sign in or create your automated insurance account</p>
-
-          {/* Custom Mode Segment Switch */}
-          <div className="flex bg-[#161B22] border border-[#30363D] rounded-2xl p-1 mb-6">
-            {[
-              ['phone', 'smartphone', 'Phone'],
-              ['email', 'mail', 'Email']
-            ].map(([m, ic, lb]) => (
-              <button key={m} onClick={() => { setMode(m); setValue(''); setError('') }}
-                className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl font-display font-semibold text-sm transition-all ${
-                  mode === m 
-                    ? 'bg-[#21262D] text-[#2DD4BF] shadow-[0_0_15px_rgba(45,212,191,0.1)] border border-[#30363D]' 
-                    : 'text-[#8B949E] hover:text-[#F0F6FC]'
-                }`}>
-                <span className={`text-lg ${mode === m ? 'icon text-[#2DD4BF]' : 'icon-o'}`}>{ic}</span>
-                {lb}
-              </button>
-            ))}
+        {/* Logo */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 24, marginBottom: 36 }}>
+          <div style={{
+            width: 38, height: 38, borderRadius: 11,
+            background: 'linear-gradient(135deg, #2DD4BF, #0D9488)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}>
+            <span className="icon" style={{ color: '#0D1117', fontSize: 20 }}>shield</span>
           </div>
+          <span style={{ fontWeight: 900, fontSize: 20, color: T.t4, letterSpacing: -0.5 }}>PAYG</span>
+        </div>
 
-          <label className="block text-[10px] font-display font-bold text-[#8B949E] uppercase tracking-wider mb-2">
-            {mode === 'phone' ? 'Phone Number' : 'Email Address'}
-          </label>
+        {/* ── STEP 1: Input ───────────────────────────────────────────────── */}
+        {step === 'input' && (
+          <div style={{ flex: 1 }}>
+            <h1 style={{ fontWeight: 900, fontSize: 32, marginBottom: 6, letterSpacing: -1 }}>Welcome! 👋</h1>
+            <p style={{ color: T.muted, marginBottom: 28, fontSize: 15 }}>Sign in or create your account</p>
 
-          {mode === 'phone' ? (
-            <div className="flex gap-2 mb-1">
-              <div className="flex items-center bg-[#161B22] border border-[#30363D] rounded-2xl px-3 h-14 text-sm font-display font-semibold text-[#8B949E] gap-1 flex-shrink-0">
-                🇳🇬 +234
-              </div>
-              <input
-                type="tel"
-                value={value}
-                onChange={e => { setValue(e.target.value.replace(/\D/g, '')); setError('') }}
-                onKeyDown={e => e.key === 'Enter' && handleSend()}
-                placeholder="08012345678"
-                maxLength={11}
-                autoFocus
-                className={`flex-1 bg-[#161B22] border-2 rounded-2xl h-14 px-4 text-lg font-display font-bold text-[#F0F6FC] transition-all outline-none ${
-                  error ? 'border-red-500/50 focus:border-red-500' : 'border-[#30363D] focus:border-[#2DD4BF]'
-                }`}
-              />
+            {/* Tab toggle */}
+            <div style={{
+              display: 'flex', background: T.s2, border: `1px solid ${T.border}`,
+              borderRadius: 13, padding: 4, marginBottom: 24,
+            }}>
+              {[['phone', 'smartphone', 'Phone'], ['email', 'mail', 'Email']].map(([m, ic, lb]) => (
+                <button key={m}
+                  onClick={() => { setMode(m); setValue(''); setError('') }}
+                  className={`auth-tab ${mode === m ? 'active' : 'inactive'}`}>
+                  <span className="icon-o" style={{ fontSize: 16 }}>{ic}</span> {lb}
+                </button>
+              ))}
             </div>
-          ) : (
-            <input
-              type="email"
-              value={value}
-              onChange={e => { setValue(e.target.value); setError('') }}
-              onKeyDown={e => e.key === 'Enter' && handleSend()}
-              placeholder="you@example.com"
-              autoFocus
-              className={`w-full bg-[#161B22] border-2 rounded-2xl h-14 px-4 text-base font-display font-bold text-[#F0F6FC] transition-all outline-none ${
-                error ? 'border-red-500/50 focus:border-red-500' : 'border-[#30363D] focus:border-[#2DD4BF]'
-              }`}
-            />
-          )}
 
-          {error && (
-            <p className="text-red-400 text-xs mt-2 flex items-center gap-1">
-              <span className="icon-o text-base">error</span>{error}
-            </p>
-          )}
+            <label className="label">{mode === 'phone' ? 'Phone Number' : 'Email Address'}</label>
 
-          <button
-            onClick={handleSend}
-            disabled={loading}
-            className="w-full mt-6 bg-gradient-to-r from-[#2DD4BF] to-[#0D9488] text-[#0D1117] font-display font-bold py-4 rounded-3xl shadow-[0_4px_20px_rgba(45,212,191,0.2)] hover:opacity-90 active:scale-95 transition-all disabled:opacity-50 flex items-center justify-center gap-2 text-base">
-            {loading ? (
-              <>
-                <span className="w-5 h-5 border-2 border-[#0D1117]/30 border-t-[#0D1117] rounded-full animate-spin block"/>
-                Sending code…
-              </>
-            ) : (
-              <>
-                <span className="icon-o text-xl">send</span>
-                Send Verification Code
-              </>
-            )}
-          </button>
-
-          {/* Explainer Tip Card */}
-          <div className="mt-5 p-4 bg-[#161B22] border border-[#2DD4BF]/10 rounded-2xl flex gap-3 items-start">
-            <span className="icon text-[#2DD4BF] text-lg flex-shrink-0 mt-0.5">info</span>
-            <p className="text-xs text-[#8B949E] font-display leading-relaxed">
-              New to PAYG? We'll provision your profile balance automatically — <span className="text-[#2DD4BF] font-semibold">no passwords required</span>.
-            </p>
-          </div>
-        </div>
-      )}
-
-      {/* ── STEP 2: One-Time Password Verification ──────────────────────────── */}
-      {step === 'otp' && (
-        <div className="animate-[fadeIn_0.3s_ease-out]">
-          <h1 className="font-display font-black text-3xl text-[#F0F6FC] mb-1">
-            {mode === 'phone' ? 'Check your SMS 📱' : 'Check your inbox 📧'}
-          </h1>
-          <p className="text-[#8B949E] text-sm mb-6">
-            We sent a validation token to{' '}
-            <span className="font-display font-bold text-[#2DD4BF]">{value}</span>
-          </p>
-
-          {/* Dev Simulated Sandboxed Gateway Banner */}
-          {devCode && (
-            <button
-              onClick={autoFill}
-              className="w-full mb-6 p-4 bg-[#1C1A14] border-2 border-amber-500/30 rounded-2xl text-left hover:bg-[#262218] transition-colors group">
-              <div className="flex items-center justify-between mb-1.5">
-                <div className="flex items-center gap-2">
-                  <span className="icon text-amber-400 text-lg">construction</span>
-                  <p className="text-xs font-display font-bold text-amber-300/90">Sandbox Environment Mode:</p>
+            {mode === 'phone' ? (
+              <div style={{ display: 'flex', gap: 8, marginBottom: 4 }}>
+                <div style={{
+                  display: 'flex', alignItems: 'center', gap: 6,
+                  background: T.s2, border: `1.5px solid ${T.border}`,
+                  borderRadius: 14, padding: '0 14px',
+                  fontSize: 14, fontWeight: 700, color: T.ink, whiteSpace: 'nowrap', flexShrink: 0,
+                }}>
+                  🇳🇬 +234
                 </div>
-                <span className="text-[10px] font-display font-bold text-amber-400 bg-amber-400/10 px-2 py-0.5 rounded-full group-hover:bg-amber-400/20 transition-colors">
-                  Tap to auto-fill →
-                </span>
+                <input
+                  type="tel" value={value}
+                  onChange={e => { setValue(e.target.value.replace(/\D/g, '')); setError('') }}
+                  onKeyDown={e => e.key === 'Enter' && handleSend()}
+                  placeholder="08012345678" maxLength={11} autoFocus
+                  className="auth-input" style={{ flex: 1 }}
+                />
               </div>
-              <p className="font-display font-black text-3xl text-amber-400 tracking-[0.3em] ml-7">
-                {devCode}
-              </p>
-              <p className="text-[10px] text-amber-500/80 mt-1.5 ml-7 leading-normal">
-                Simulated carrier loop. Tap this card to seamlessly forward the credentials into inputs.
-              </p>
-            </button>
-          )}
-
-          <label className="block text-[10px] font-display font-bold text-[#8B949E] uppercase tracking-wider mb-3">
-            Verification Token
-          </label>
-
-          <div className="flex gap-3 mb-1">
-            {otp.map((d, i) => (
-              <input
-                key={i}
-                ref={refs[i]}
-                type="text"
-                inputMode="numeric"
-                maxLength={1}
-                value={d}
-                onChange={e => handleOtpChange(i, e.target.value)}
-                onKeyDown={e => handleOtpKey(i, e)}
-                className={`flex-1 aspect-square text-center font-display font-black text-2xl border-2 rounded-2xl transition-all outline-none ${
-                  d 
-                    ? 'border-[#2DD4BF] bg-[#2DD4BF]/10 text-[#2DD4BF] shadow-[0_0_15px_rgba(45,212,191,0.15)]' 
-                    : 'border-[#30363D] bg-[#161B22] text-[#F0F6FC]'
-                }`}
-              />
-            ))}
-          </div>
-
-          {error && (
-            <p className="text-red-400 text-xs mt-3 mb-1 flex items-center gap-1">
-              <span className="icon-o text-base">error</span>{error}
-            </p>
-          )}
-
-          {/* Interactive Countdown/Resend Control */}
-          <div className="flex items-center justify-between mt-4 mb-6">
-            <p className="text-xs text-[#8B949E]">Didn't receive code?</p>
-            {resendTimer > 0 ? (
-              <p className="text-xs font-display text-[#8B949E]">
-                Resend window opens in <span className="font-bold text-[#2DD4BF]">{resendTimer}s</span>
-              </p>
             ) : (
-              <button
-                onClick={handleResend}
-                className="text-xs font-display font-black text-[#2DD4BF] hover:underline bg-transparent border-none outline-none cursor-pointer">
-                Resend Request
+              <input
+                type="email" value={value}
+                onChange={e => { setValue(e.target.value); setError('') }}
+                onKeyDown={e => e.key === 'Enter' && handleSend()}
+                placeholder="you@example.com" autoFocus
+                className="auth-input" style={{ marginBottom: 4 }}
+              />
+            )}
+
+            {error && (
+              <p style={{ color: '#F87171', fontSize: 12, marginTop: 6, marginBottom: 4,
+                display: 'flex', alignItems: 'center', gap: 4 }}>
+                <span className="icon-o" style={{ fontSize: 14 }}>error</span>{error}
+              </p>
+            )}
+
+            <button onClick={handleSend} disabled={loading} className="teal-btn" style={{ marginTop: 20 }}>
+              {loading
+                ? <><span className="auth-spin" style={{ width: 18, height: 18, border: '2px solid rgba(0,0,0,0.2)', borderTopColor: '#0D1117', borderRadius: '50%' }} />Sending code…</>
+                : <><span className="icon-o" style={{ fontSize: 18 }}>send</span>Send Verification Code</>}
+            </button>
+
+            <div style={{
+              marginTop: 16, padding: '12px 16px',
+              background: 'rgba(45,212,191,0.07)', border: '1px solid rgba(45,212,191,0.2)',
+              borderRadius: 12,
+            }}>
+              <p style={{ fontSize: 12, color: T.t4, display: 'flex', alignItems: 'flex-start', gap: 8 }}>
+                <span className="icon" style={{ fontSize: 14, marginTop: 1, flexShrink: 0 }}>info</span>
+                New to PAYG? We'll create your account automatically — no password needed.
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* ── STEP 2: OTP ─────────────────────────────────────────────────── */}
+        {step === 'otp' && (
+          <div style={{ flex: 1 }}>
+            <h1 style={{ fontWeight: 900, fontSize: 30, marginBottom: 6, letterSpacing: -0.8 }}>
+              {mode === 'phone' ? 'Check your SMS 📱' : 'Check your inbox 📧'}
+            </h1>
+            <p style={{ color: T.muted, marginBottom: 24, fontSize: 15 }}>
+              We sent a 4-digit code to{' '}
+              <span style={{ fontWeight: 700, color: T.ink }}>{value}</span>
+            </p>
+
+            {/* Dev banner */}
+            {devCode && (
+              <button onClick={autoFill} style={{
+                width: '100%', marginBottom: 20,
+                background: 'rgba(245,158,11,0.08)', border: '1.5px solid rgba(245,158,11,0.3)',
+                borderRadius: 14, padding: '14px 16px', textAlign: 'left', cursor: 'pointer',
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <span className="icon" style={{ color: '#F59E0B', fontSize: 16 }}>construction</span>
+                    <p style={{ fontSize: 11, fontWeight: 700, color: '#F59E0B' }}>Demo mode — your code is:</p>
+                  </div>
+                  <span style={{ fontSize: 10, fontWeight: 700, color: '#F59E0B', background: 'rgba(245,158,11,0.12)',
+                    padding: '2px 8px', borderRadius: 99 }}>Click to auto-fill →</span>
+                </div>
+                <p style={{ fontWeight: 900, fontSize: 32, color: '#F59E0B', letterSpacing: '0.3em', paddingLeft: 22 }}>
+                  {devCode}
+                </p>
+                <p style={{ fontSize: 10, color: '#D97706', marginTop: 4, paddingLeft: 22 }}>
+                  This only appears because no SMS provider is connected yet.
+                </p>
               </button>
             )}
-          </div>
 
-          <button
-            onClick={handleVerify}
-            disabled={loading || otp.join('').length < 4}
-            className="w-full bg-gradient-to-r from-[#2DD4BF] to-[#0D9488] text-[#0D1117] font-display font-bold py-4 rounded-3xl shadow-[0_4px_20px_rgba(45,212,191,0.2)] hover:opacity-90 active:scale-95 transition-all disabled:opacity-40 flex items-center justify-center gap-2 text-base mb-4">
-            {loading ? (
-              <>
-                <span className="w-5 h-5 border-2 border-[#0D1117]/30 border-t-[#0D1117] rounded-full animate-spin block"/>
-                Authorizing session…
-              </>
-            ) : (
-              <>
-                <span className="icon-o">verified</span>
-                Verify & Continue
-              </>
+            <label className="label" style={{ marginBottom: 12 }}>Verification Code</label>
+
+            <div style={{ display: 'flex', gap: 12, marginBottom: 8 }}>
+              {otp.map((d, i) => (
+                <input
+                  key={i} ref={refs[i]} type="text" inputMode="numeric"
+                  maxLength={1} value={d}
+                  onChange={e => handleOtpChange(i, e.target.value)}
+                  onKeyDown={e => handleOtpKey(i, e)}
+                  className={`auth-otp${d ? ' filled' : ''}`}
+                />
+              ))}
+            </div>
+
+            {error && (
+              <p style={{ color: '#F87171', fontSize: 12, marginTop: 4, marginBottom: 6,
+                display: 'flex', alignItems: 'center', gap: 4 }}>
+                <span className="icon-o" style={{ fontSize: 14 }}>error</span>{error}
+              </p>
             )}
-          </button>
 
-          <button
-            onClick={() => { setStep('input'); setOtp(['', '', '', '']); setDevCode(null); setError(''); clearInterval(timerRef.current) }}
-            className="w-full text-[#8B949E] text-xs font-display py-2 hover:text-[#F0F6FC] transition-colors bg-transparent border-none outline-none">
-            ← Change address entry details
-          </button>
-        </div>
-      )}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', margin: '14px 0 24px' }}>
+              <p style={{ fontSize: 12, color: T.muted }}>Didn't receive it?</p>
+              {resendTimer > 0 ? (
+                <p style={{ fontSize: 12, color: T.muted }}>
+                  Resend in <span style={{ fontWeight: 700, color: T.ink }}>{resendTimer}s</span>
+                </p>
+              ) : (
+                <button onClick={handleResend} style={{
+                  fontSize: 12, fontWeight: 700, color: '#FB923C',
+                  background: 'none', border: 'none', cursor: 'pointer',
+                }}>
+                  Resend Code
+                </button>
+              )}
+            </div>
 
-      {/* Footer Legal Terms Agreement Links */}
-      <p className="mt-auto py-6 text-center text-[11px] text-[#8B949E] leading-relaxed">
-        By authentication, you consent to our{' '}
-        <Link to="/terms" className="text-[#2DD4BF] font-semibold hover:underline">Terms of Service</Link>{' '}
-        and confirm access configuration under our{' '}
-        <Link to="/privacy" className="text-[#2DD4BF] font-semibold hover:underline">Privacy Policy</Link>.
-      </p>
+            <button onClick={handleVerify} disabled={loading || otp.join('').length < 4} className="teal-btn" style={{ marginBottom: 12 }}>
+              {loading
+                ? <><span className="auth-spin" style={{ width: 18, height: 18, border: '2px solid rgba(0,0,0,0.2)', borderTopColor: '#0D1117', borderRadius: '50%' }} />Verifying…</>
+                : <><span className="icon-o">verified</span>Verify & Continue</>}
+            </button>
+
+            <button
+              onClick={() => { setStep('input'); setOtp(['', '', '', '']); setDevCode(null); setError(''); clearInterval(timerRef.current) }}
+              style={{ width: '100%', background: 'none', border: 'none', cursor: 'pointer',
+                color: T.muted, fontSize: 14, padding: '10px 0' }}>
+              ← Change {mode === 'phone' ? 'phone number' : 'email'}
+            </button>
+          </div>
+        )}
+
+        <p style={{ marginTop: 'auto', padding: '24px 0', textAlign: 'center', fontSize: 12, color: T.muted, lineHeight: 1.6 }}>
+          By continuing you agree to our{' '}
+          <Link to="/terms" style={{ color: T.t4, fontWeight: 700, textDecoration: 'none' }}>Terms of Service</Link>
+          {' '}and{' '}
+          <Link to="/privacy" style={{ color: T.t4, fontWeight: 700, textDecoration: 'none' }}>Privacy Policy</Link>
+        </p>
+      </div>
     </div>
   )
 }

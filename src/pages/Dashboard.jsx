@@ -2,227 +2,262 @@ import { useNavigate } from 'react-router-dom'
 import { useApp } from '../context/AppContext.jsx'
 import AppLayout from '../components/AppLayout.jsx'
 
-// ─── LOCAL COMPONENTS ───────────────────────────────────────
+const T = {
+  s0: '#0D1117', s1: '#161B22', s2: '#21262D',
+  t4: '#2DD4BF', t6: '#0D9488',
+  ink: '#F0F6FC', muted: '#8B949E', border: '#30363D',
+  green: '#34D399', orange: '#FB923C',
+}
+
+const css = `
+  .dash-card {
+    background: ${T.s1};
+    border: 1px solid ${T.border};
+    border-radius: 20px;
+    transition: border-color 0.2s;
+  }
+  .dash-card:hover { border-color: rgba(45,212,191,0.2); }
+  .quick-action {
+    padding: 14px 10px;
+    border-radius: 14px;
+    background: ${T.s2};
+    border: 1px solid ${T.border};
+    color: ${T.ink};
+    font-size: 13px;
+    font-weight: 700;
+    font-family: inherit;
+    cursor: pointer;
+    transition: border-color 0.18s, background 0.18s;
+  }
+  .quick-action:hover { border-color: ${T.t4}; background: rgba(45,212,191,0.06); color: ${T.t4}; }
+  .tx-row { display: flex; align-items: center; gap: 12px; padding: 14px 20px; border-bottom: 1px solid ${T.border}; }
+  .tx-row:last-child { border-bottom: none; }
+`
+
 function CoverageBar({ wallet, price }) {
   const pct = price > 0 ? Math.min((wallet / price) * 100, 100) : 0
-
   return (
-    <div className="w-full h-2 rounded-full overflow-hidden" style={{ backgroundColor: 'rgba(255, 255, 255, 0.1)' }}>
-      <div
-        className="h-full rounded-full transition-all duration-500"
-        style={{ 
-          width: `${pct}%`,
-          background: 'linear-gradient(90deg, var(--teal), var(--primary-light))'
-        }}
-      />
+    <div style={{ width: '100%', height: 6, background: 'rgba(255,255,255,0.15)', borderRadius: 99, overflow: 'hidden' }}>
+      <div style={{
+        height: '100%', borderRadius: 99,
+        background: 'rgba(255,255,255,0.9)',
+        width: `${pct}%`, transition: 'width 0.6s ease',
+      }} />
     </div>
   )
 }
 
 function StatusBadge({ status }) {
   const cfg = {
-    active:   { bg: 'rgba(20,184,166,0.1)',   text: 'var(--teal)',          dot: 'var(--teal)',          label: 'Active' },
-    pending:  { bg: 'rgba(249,115,22,0.1)',   text: 'var(--orange)',        dot: 'var(--orange)',        label: 'Pending' },
-    inactive: { bg: 'rgba(255,255,255,0.05)', text: 'var(--text-muted)',    dot: 'var(--text-muted)',    label: 'Inactive' },
+    active:   { bg: 'rgba(52,211,153,0.12)', color: T.green,  dot: T.green,  label: 'Active' },
+    pending:  { bg: 'rgba(251,146,60,0.12)',  color: T.orange, dot: T.orange, label: 'Pending' },
+    inactive: { bg: T.s2,                     color: T.muted,  dot: T.muted,  label: 'Inactive' },
   }
-
-  const current = cfg[status] || cfg.inactive
-
+  const c = cfg[status] || cfg.inactive
   return (
-    <span 
-      className="text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-xl flex items-center gap-1.5 border"
-      style={{ backgroundColor: current.bg, color: current.text, borderColor: 'transparent' }}
-    >
-      <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ backgroundColor: current.dot }} />
-      {current.label}
+    <span style={{
+      display: 'inline-flex', alignItems: 'center', gap: 5,
+      background: c.bg, color: c.color,
+      fontSize: 11, fontWeight: 700,
+      padding: '4px 10px', borderRadius: 99,
+    }}>
+      <span style={{ width: 6, height: 6, borderRadius: '50%', background: c.dot, flexShrink: 0 }} />
+      {c.label}
     </span>
   )
 }
 
-// ─── MAIN COMPONENT ──────────────────────────────────────────
 export default function Dashboard() {
   const navigate = useNavigate()
-  const { user, subscription, walletBalance, transactions, claims } = useApp()
+  const { user, subscription, transactions, notifications } = useApp()
 
-  const currentPlan = subscription?.planName || 'Standard'
-  const planPrice = subscription?.price || 1000
-  const status = subscription?.status || 'inactive'
+  const wallet    = Number(subscription.walletBalance || 0)
+  const price     = Number(subscription.planPrice || 0)
+  const remaining = Math.max(0, price - wallet)
+  const pct       = price > 0 ? Math.min((wallet / price) * 100, 100) : 0
+  const unread    = notifications.filter(n => !n.read).length
 
-  const formatDate = (iso) => {
-    if (!iso) return '—'
-    return new Date(iso).toLocaleDateString('en-NG', { day: 'numeric', month: 'short', year: 'numeric' })
-  }
+  const daysLeft = subscription.coverageUntil
+    ? Math.max(0, Math.ceil((new Date(subscription.coverageUntil).getTime() - Date.now()) / 86400000))
+    : 0
+
+  const formatDate = d => d ? new Date(d).toLocaleDateString(undefined, { day: '2-digit', month: 'short' }) : ''
 
   return (
     <AppLayout>
-      <div className="min-h-screen py-8 px-6 lg:px-10 pb-24 relative" style={{ backgroundColor: 'var(--bg)', color: 'var(--text)' }}>
-        {/* Ambient Top Glow Portal */}
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[300px] rounded-full opacity-10 pointer-events-none filter blur-[100px]" style={{ background: 'linear-gradient(90deg, var(--primary), var(--teal))' }}></div>
+      <style>{css}</style>
 
-        <div className="max-w-5xl mx-auto relative z-10 flex flex-col gap-6">
-          
-          {/* Dashboard Context Greeting Banner */}
-          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 pt-4">
-            <div>
-              <h1 className="font-display font-black text-2xl lg:text-3xl text-white tracking-tight leading-none mb-1.5">
-                Welcome back, {user?.firstName || 'Operator'}
-              </h1>
-              <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
-                System Node ID: <span className="font-mono tracking-wider opacity-70">{user?.phone || 'Unknown'}</span> · Framework status stable.
-              </p>
+      {/* HEADER */}
+      <div style={{
+        background: T.s0, padding: '48px 24px 20px',
+        borderBottom: `1px solid ${T.border}`,
+        position: 'sticky', top: 0, zIndex: 30,
+      }}>
+        <div style={{ maxWidth: 900, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div>
+            <p style={{ fontSize: 13, color: T.muted, marginBottom: 4 }}>Good day 👋</p>
+            <h1 style={{ fontWeight: 900, fontSize: 'clamp(24px,4vw,36px)', letterSpacing: -1, color: T.ink }}>
+              {user?.firstName ? `${user.firstName} ${user.lastName || ''}` : 'Welcome back'}
+            </h1>
+          </div>
+          <button onClick={() => navigate('/notifications')} style={{
+            position: 'relative', width: 42, height: 42,
+            background: T.s2, border: `1px solid ${T.border}`,
+            borderRadius: 13, display: 'flex', alignItems: 'center', justifyContent: 'center',
+            cursor: 'pointer',
+          }}>
+            <span className="icon-o" style={{ color: T.ink, fontSize: 22 }}>notifications</span>
+            {unread > 0 && (
+              <span style={{
+                position: 'absolute', top: -5, right: -5,
+                width: 18, height: 18, background: T.orange,
+                borderRadius: '50%', color: '#fff',
+                fontSize: 10, fontWeight: 800,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                border: `2px solid ${T.s0}`,
+              }}>{unread}</span>
+            )}
+          </button>
+        </div>
+      </div>
+
+      {/* CONTENT */}
+      <div style={{ padding: '24px 20px 80px', maxWidth: 900, margin: '0 auto' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(280px,1fr))', gap: 16 }}>
+
+          {/* WALLET CARD — full width, teal gradient with glow bloom */}
+          <div style={{
+            gridColumn: '1 / -1',
+            background: `linear-gradient(135deg, ${T.t6} 0%, #0A6B63 50%, #053D38 100%)`,
+            borderRadius: 22, padding: 28,
+            position: 'relative', overflow: 'hidden',
+          }}>
+            {/* signature glow bloom */}
+            <div style={{
+              position: 'absolute', top: -80, right: -60,
+              width: 320, height: 320,
+              background: 'radial-gradient(circle, rgba(45,212,191,0.25) 0%, transparent 65%)',
+              pointerEvents: 'none',
+            }} />
+            <div style={{ position: 'relative', zIndex: 1 }}>
+              <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 20 }}>
+                <div>
+                  <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.6)', fontWeight: 600, marginBottom: 6 }}>Insurance Wallet</p>
+                  <p style={{ fontWeight: 900, fontSize: 'clamp(36px,6vw,52px)', color: '#fff', letterSpacing: -2, lineHeight: 1 }}>
+                    ₦{wallet.toLocaleString()}
+                  </p>
+                  <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.55)', marginTop: 6 }}>
+                    of ₦{price.toLocaleString()} monthly target
+                  </p>
+                </div>
+                <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                  <p style={{ fontSize: 10, color: 'rgba(255,255,255,0.5)', fontWeight: 600, marginBottom: 4 }}>Policy</p>
+                  <p style={{ fontWeight: 700, fontSize: 13, color: '#fff' }}>{subscription.policyNumber}</p>
+                  <div style={{ marginTop: 8 }}>
+                    <StatusBadge status={subscription.status} />
+                  </div>
+                </div>
+              </div>
+              <CoverageBar wallet={wallet} price={price} />
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 10 }}>
+                <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.55)' }}>
+                  {remaining > 0
+                    ? `₦${remaining.toLocaleString()} more to fully fund`
+                    : '🎉 Fully funded for this month!'}
+                </p>
+                <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.55)', fontWeight: 700 }}>{pct.toFixed(0)}%</p>
+              </div>
             </div>
-            <StatusBadge status={status} />
           </div>
 
-          {/* Grid Layout Matrix */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            
-            {/* Main Insurance Wallet Component */}
-            <div 
-              className="p-6 rounded-2xl border md:col-span-2 flex flex-col justify-between shadow-xl"
-              style={{ backgroundColor: 'var(--surface)', borderColor: 'var(--border)' }}
-            >
-              <div>
-                <div className="flex justify-between items-center mb-4">
-                  <span className="text-[10px] font-black uppercase tracking-widest" style={{ color: 'var(--text-muted)' }}>
-                    Insurance Balance Wallet
-                  </span>
-                  <span className="icon text-white/40">account_balance_wallet</span>
-                </div>
-                <div className="flex items-baseline gap-1.5 mb-4">
-                  <span className="text-4xl font-black text-white tracking-tight">
-                    ₦{Number(walletBalance || 0).toLocaleString()}
-                  </span>
-                  <span className="text-xs font-medium" style={{ color: 'var(--text-muted)' }}>NGN</span>
-                </div>
-              </div>
-
-              <div className="flex flex-col gap-3 mt-4">
-                <div className="flex justify-between text-xs font-semibold">
-                  <span style={{ color: 'var(--text-muted)' }}>Cycle Allocation Level ({currentPlan} Tier)</span>
-                  <span className="text-white">₦{Number(walletBalance || 0).toLocaleString()} / ₦{planPrice.toLocaleString()}</span>
-                </div>
-                <CoverageBar wallet={walletBalance || 0} price={planPrice} />
-                <button
-                  onClick={() => navigate('/payment')}
-                  className="w-full py-3.5 rounded-xl text-xs font-black uppercase tracking-wider text-white transition-all hover:opacity-90 active:scale-[0.99] mt-2"
-                  style={{ background: 'linear-gradient(90deg, var(--primary), var(--primary-light))' }}
-                >
-                  Fund Coverage Core Node
-                </button>
-              </div>
-            </div>
-
-            {/* Coverage Configuration Summary Card */}
-            <div 
-              className="p-6 rounded-2xl border flex flex-col justify-between shadow-xl relative overflow-hidden"
-              style={{ backgroundColor: 'var(--surface)', borderColor: 'var(--border)' }}
-            >
-              <div>
-                <div className="flex justify-between items-center mb-4">
-                  <span className="text-[10px] font-black uppercase tracking-widest" style={{ color: 'var(--text-muted)' }}>
-                    Active Protocols
-                  </span>
-                  <span className="icon text-white/40">shield</span>
-                </div>
-                <h3 className="font-display font-black text-2xl text-white tracking-tight mb-1">{currentPlan}</h3>
-                <p className="text-xs leading-normal" style={{ color: 'var(--text-muted)' }}>
-                  Micro-billing parameters extract exactly ₦{(planPrice).toLocaleString()} per validation interval.
-                </p>
-              </div>
-
-              <button
-                onClick={() => navigate('/plans')}
-                className="w-full py-3.5 rounded-xl border text-xs font-black uppercase tracking-widest text-white transition-all hover:bg-white/5 active:scale-[0.99] mt-6"
-                style={{ backgroundColor: 'var(--surface-2)', borderColor: 'var(--border)' }}
-              >
-                Modify Tier Policy
+          {/* PLAN CARD */}
+          <div className="dash-card" style={{ padding: 24 }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+              <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: 1.2, textTransform: 'uppercase', color: T.muted }}>
+                Current Plan
+              </p>
+              <button onClick={() => navigate('/plans')} style={{
+                fontSize: 12, fontWeight: 700, color: T.t4,
+                background: 'none', border: 'none', cursor: 'pointer',
+              }}>
+                Change
               </button>
             </div>
-
+            <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 12 }}>
+              <div style={{
+                width: 44, height: 44, borderRadius: 13,
+                background: 'linear-gradient(135deg, rgba(45,212,191,0.15), rgba(13,148,136,0.2))',
+                border: '1px solid rgba(45,212,191,0.2)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+              }}>
+                <span className="icon" style={{ color: T.t4, fontSize: 22 }}>shield</span>
+              </div>
+              <div>
+                <p style={{ fontWeight: 900, fontSize: 18, color: T.ink }}>{subscription.plan}</p>
+                <p style={{ fontSize: 13, color: T.muted }}>₦{price.toLocaleString()} / month</p>
+              </div>
+            </div>
+            {daysLeft > 0 && (
+              <p style={{ fontSize: 13, color: T.muted }}>
+                Coverage active for <span style={{ fontWeight: 700, color: T.ink }}>{daysLeft} days</span>
+              </p>
+            )}
           </div>
 
-          {/* Ledger Splits Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            
-            {/* Claims Settlement Center Ledger Fragment */}
-            <div 
-              className="rounded-2xl border shadow-xl overflow-hidden"
-              style={{ backgroundColor: 'var(--surface)', borderColor: 'var(--border)' }}
-            >
-              <div className="p-5 border-b flex justify-between items-center" style={{ borderColor: 'var(--border)' }}>
-                <p className="text-[10px] font-black uppercase tracking-widest" style={{ color: 'var(--text-muted)' }}>
-                  Claims Routing Pipelines
-                </p>
-                <button
-                  onClick={() => navigate('/claims')}
-                  className="text-xs font-black uppercase tracking-wider transition-all hover:opacity-80"
-                  style={{ color: 'var(--primary-light)' }}
-                >
-                  Enter Portal
+          {/* QUICK ACTIONS */}
+          <div className="dash-card" style={{ padding: 24 }}>
+            <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: 1.2, textTransform: 'uppercase', color: T.muted, marginBottom: 16 }}>
+              Quick Actions
+            </p>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+              {[
+                { label: 'Top Up',     path: '/payment', icon: 'add_card' },
+                { label: 'File Claim', path: '/claims',  icon: 'receipt_long' },
+                { label: 'My Plans',   path: '/plans',   icon: 'shield' },
+                { label: 'Profile',    path: '/profile', icon: 'person' },
+              ].map(a => (
+                <button key={a.path} onClick={() => navigate(a.path)} className="quick-action">
+                  <span className="icon-o" style={{ fontSize: 18, display: 'block', marginBottom: 4 }}>{a.icon}</span>
+                  {a.label}
                 </button>
-              </div>
-
-              <div className="divide-y" style={{ borderColor: 'var(--border)' }}>
-                {!claims || claims.length === 0 ? (
-                  <p className="p-6 text-xs text-center font-medium" style={{ color: 'var(--text-muted)' }}>
-                    No claims parsed for this token node.
-                  </p>
-                ) : (
-                  claims.slice(0, 3).map(item => (
-                    <div key={item.id} className="flex justify-between items-center px-5 py-4 transition-colors hover:bg-white/[0.01]">
-                      <div>
-                        <p className="text-xs font-bold text-white mb-0.5">{item.type} Case</p>
-                        <p className="text-[10px]" style={{ color: 'var(--text-muted)' }}>{formatDate(item.createdAt || item.date)}</p>
-                      </div>
-                      <span className="text-xs font-mono font-black" style={{ color: 'var(--orange)' }}>
-                        ₦{Number(item.amount).toLocaleString()}
-                      </span>
-                    </div>
-                  ))
-                )}
-              </div>
+              ))}
             </div>
+          </div>
 
-            {/* Historical Extraction Payments Ledger */}
-            <div 
-              className="rounded-2xl border shadow-xl overflow-hidden"
-              style={{ backgroundColor: 'var(--surface)', borderColor: 'var(--border)' }}
-            >
-              <div className="p-5 border-b flex justify-between items-center" style={{ borderColor: 'var(--border)' }}>
-                <p className="text-[10px] font-black uppercase tracking-widest" style={{ color: 'var(--text-muted)' }}>
-                  Recent Billings Ledger
-                </p>
-                <button
-                  onClick={() => navigate('/payment')}
-                  className="text-xs font-black uppercase tracking-wider transition-all hover:opacity-80"
-                  style={{ color: 'var(--primary-light)' }}
-                >
-                  Review Invoices
-                </button>
-              </div>
-
-              <div className="divide-y" style={{ borderColor: 'var(--border)' }}>
-                {!transactions || transactions.length === 0 ? (
-                  <p className="p-6 text-xs text-center font-medium" style={{ color: 'var(--text-muted)' }}>
-                    No payment historical logs parsed.
-                  </p>
-                ) : (
-                  transactions.slice(0, 3).map(tx => (
-                    <div key={tx.id} className="flex justify-between items-center px-5 py-4 transition-colors hover:bg-white/[0.01]">
-                      <div>
-                        <p className="text-xs font-bold text-white mb-0.5">{tx.type}</p>
-                        <p className="text-[10px]" style={{ color: 'var(--text-muted)' }}>{formatDate(tx.date)}</p>
-                      </div>
-                      <span className="text-xs font-mono font-black" style={{ color: 'var(--teal)' }}>
-                        +₦{Number(tx.amount).toLocaleString()}
-                      </span>
-                    </div>
-                  ))
-                )}
-              </div>
+          {/* TRANSACTIONS */}
+          <div className="dash-card" style={{ gridColumn: '1 / -1', overflow: 'hidden' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '20px 20px 14px' }}>
+              <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: 1.2, textTransform: 'uppercase', color: T.muted }}>
+                Recent Payments
+              </p>
+              <button onClick={() => navigate('/payment')} style={{
+                fontSize: 12, fontWeight: 700, color: T.t4, background: 'none', border: 'none', cursor: 'pointer',
+              }}>
+                View all
+              </button>
             </div>
-
+            {transactions.length === 0 ? (
+              <p style={{ padding: '0 20px 20px', fontSize: 13, color: T.muted }}>No transactions yet</p>
+            ) : (
+              transactions.slice(0, 3).map(tx => (
+                <div key={tx.id} className="tx-row">
+                  <div style={{
+                    width: 36, height: 36, borderRadius: 11,
+                    background: 'rgba(52,211,153,0.1)', border: '1px solid rgba(52,211,153,0.15)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+                  }}>
+                    <span className="icon" style={{ color: T.green, fontSize: 18 }}>payments</span>
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <p style={{ fontWeight: 600, fontSize: 14, color: T.ink }}>{tx.type}</p>
+                    <p style={{ fontSize: 11, color: T.muted }}>{formatDate(tx.date)}</p>
+                  </div>
+                  <span style={{ fontWeight: 800, fontSize: 15, color: T.green }}>
+                    +₦{Number(tx.amount).toLocaleString()}
+                  </span>
+                </div>
+              ))
+            )}
           </div>
 
         </div>
