@@ -84,7 +84,7 @@ export default function Auth() {
       startCountdown()
     } catch (e) {
       setError(e.message || 'Could not send code. Check your connection.')
-    } fill {
+    } finally {
       setLoading(false)
     }
   }
